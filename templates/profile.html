@@ -1,0 +1,151 @@
+{% extends "responsive_base.html" %}
+
+{% block title %}Profile - AniFlix{% endblock %}
+
+{% block content %}
+<div class="min-h-screen pt-20 pb-16 px-4">
+    <div class="max-w-4xl mx-auto">
+        <!-- Profile Header -->
+        <div class="bg-gradient-to-r from-gray-800 to-gray-900 rounded-xl p-8 mb-8 shadow-2xl profile-card">
+            <div class="flex flex-col md:flex-row items-center md:items-start gap-6">
+                <!-- Profile Avatar -->
+                <div class="relative">
+                    <div class="w-32 h-32 rounded-full bg-gradient-to-r from-red-500 to-red-600 flex items-center justify-center shadow-xl profile-avatar">
+                        <span class="text-4xl font-bold text-white">{{ current_user.username[0].upper() }}</span>
+                    </div>
+                    <div class="absolute -bottom-2 -right-2 w-8 h-8 bg-green-500 rounded-full border-4 border-gray-800 flex items-center justify-center">
+                        <i class="fas fa-check text-white text-xs"></i>
+                    </div>
+                </div>
+                
+                <!-- Profile Info -->
+                <div class="flex-1 text-center md:text-left">
+                    <h1 class="text-3xl font-bold text-white mb-2">{{ current_user.username }}</h1>
+                    <p class="text-gray-300 text-lg mb-4">{{ current_user.email }}</p>
+                    
+                    <!-- Subscription Badge -->
+                    <div class="flex flex-wrap justify-center md:justify-start gap-3 mb-4">
+                        {% if current_user.is_vip() %}
+                        <span class="px-4 py-2 bg-gradient-to-r from-yellow-500 to-yellow-600 text-black font-semibold rounded-full text-sm">
+                            <i class="fas fa-crown mr-1"></i>VIP Member
+                        </span>
+                        {% else %}
+                        <span class="px-4 py-2 bg-gray-600 text-white font-medium rounded-full text-sm">
+                            <i class="fas fa-user mr-1"></i>Free Member
+                        </span>
+                        {% endif %}
+                        
+                        {% if current_user.is_admin() %}
+                        <span class="px-4 py-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white font-semibold rounded-full text-sm">
+                            <i class="fas fa-shield-alt mr-1"></i>Admin
+                        </span>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="flex flex-wrap justify-center md:justify-start gap-3">
+                        <a href="{{ url_for('edit_profile') }}" 
+                           class="px-6 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-all duration-200 transform hover:scale-105">
+                            <i class="fas fa-edit mr-2"></i>Edit Profile
+                        </a>
+                        <a href="{{ url_for('subscription.subscription_page') }}" 
+                           class="px-6 py-2 bg-gray-700 hover:bg-gray-600 text-white font-medium rounded-lg transition-all duration-200 transform hover:scale-105">
+                            <i class="fas fa-credit-card mr-2"></i>Subscription
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Account Details -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Account Information -->
+            <div class="bg-gray-800 rounded-xl p-6 shadow-xl profile-card">
+                <h2 class="text-xl font-bold text-white mb-6 flex items-center">
+                    <i class="fas fa-user-circle mr-3 text-red-500"></i>
+                    Account Information
+                </h2>
+                
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center py-3 border-b border-gray-700 profile-stat">
+                        <span class="text-gray-300">Username</span>
+                        <span class="text-white font-medium">{{ current_user.username }}</span>
+                    </div>
+                    
+                    <div class="flex justify-between items-center py-3 border-b border-gray-700 profile-stat">
+                        <span class="text-gray-300">Email</span>
+                        <span class="text-white font-medium">{{ current_user.email }}</span>
+                    </div>
+                    
+                    <div class="flex justify-between items-center py-3 border-b border-gray-700 profile-stat">
+                        <span class="text-gray-300">Member Since</span>
+                        <span class="text-white font-medium">{{ current_user.created_at.strftime('%B %Y') if current_user.created_at else 'Unknown' }}</span>
+                    </div>
+                    
+                    <div class="flex justify-between items-center py-3 profile-stat">
+                        <span class="text-gray-300">Last Login</span>
+                        <span class="text-white font-medium">{{ current_user.last_login.strftime('%d %b %Y, %H:%M') if current_user.last_login else 'Now (First Login)' }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Subscription Details -->
+            <div class="bg-gray-800 rounded-xl p-6 shadow-xl profile-card">
+                <h2 class="text-xl font-bold text-white mb-6 flex items-center">
+                    <i class="fas fa-crown mr-3 text-yellow-500"></i>
+                    Subscription Details
+                </h2>
+                
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center py-3 border-b border-gray-700">
+                        <span class="text-gray-300">Plan Type</span>
+                        {% if current_user.is_vip() %}
+                        <span class="text-yellow-400 font-medium capitalize">{{ current_user.subscription_type.replace('_', ' ').title() }}</span>
+                        {% else %}
+                        <span class="text-gray-400 font-medium">Free Plan</span>
+                        {% endif %}
+                    </div>
+                    
+                    {% if current_user.is_vip() and current_user.subscription_expires %}
+                    <div class="flex justify-between items-center py-3 border-b border-gray-700">
+                        <span class="text-gray-300">Expires On</span>
+                        <span class="text-white font-medium">{{ current_user.subscription_expires.strftime('%d %b %Y') }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="flex justify-between items-center py-3 border-b border-gray-700">
+                        <span class="text-gray-300">Status</span>
+                        {% if current_user.is_vip() %}
+                        <span class="px-3 py-1 bg-green-600 text-white text-sm rounded-full">Active</span>
+                        {% else %}
+                        <span class="px-3 py-1 bg-gray-600 text-white text-sm rounded-full">Basic</span>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="flex justify-between items-center py-3">
+                        <span class="text-gray-300">Access Level</span>
+                        {% if current_user.is_vip() %}
+                        <span class="text-green-400 font-medium">Full Access</span>
+                        {% else %}
+                        <span class="text-orange-400 font-medium">Limited Access</span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                {% if not current_user.is_vip() %}
+                <div class="mt-6 p-4 bg-gradient-to-r from-red-600/20 to-red-500/20 rounded-lg border border-red-500/30">
+                    <h3 class="text-red-400 font-semibold mb-2">Upgrade to VIP</h3>
+                    <p class="text-gray-300 text-sm mb-3">Get unlimited access to all episodes and exclusive content!</p>
+                    <a href="{{ url_for('subscription.subscription_page') }}" 
+                       class="inline-block px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors">
+                        Upgrade Now
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,218 @@
+{% extends "responsive_base.html" %}
+
+{% block title %}{{ episode.title }} - {{ content.title }}{% endblock %}
+
+{% block head %}
+<!-- Plyr CSS -->
+<link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
+
+<style>
+/* Video container styling */
+.video-container {
+    width: 100%;
+    aspect-ratio: 16/9;
+    background: #000;
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+}
+
+/* Ensure video shows properly */
+video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: #000;
+}
+
+/* Plyr player styling */
+.plyr {
+    width: 100%;
+    height: 100%;
+}
+
+.plyr video {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <div class="container mx-auto px-4 py-8">
+        <div class="max-w-6xl mx-auto">
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                <div class="lg:col-span-3">
+                    <!-- Back to Anime List -->
+                    <div class="mb-6">
+                        <a href="{{ url_for('content.content_detail', content_id=content.id) }}" 
+                           class="inline-flex items-center text-slate-300 hover:text-white transition-colors duration-200">
+                            <i class="fas fa-chevron-left mr-2"></i>
+                            Back to Anime List
+                        </a>
+                    </div>
+
+                    <!-- Server Selection -->
+                    <div class="glass-card rounded-2xl p-6 mb-6">
+                        <h3 class="text-lg font-semibold text-white mb-4">
+                            <i class="fas fa-server mr-2 text-red-400"></i>
+                            Select Server
+                        </h3>
+                        <p class="text-slate-400 text-sm mb-4">Choose your preferred streaming source</p>
+                        
+                        <div class="flex flex-wrap gap-3">
+                            {% if episode.server_m3u8_url %}
+                            <button onclick="switchServer('m3u8', '{{ episode.server_m3u8_url }}')" 
+                                    id="server-m3u8"
+                                    class="server-btn flex items-center px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white font-medium transition-all duration-200">
+                                <i class="fas fa-play mr-2"></i>
+                                Server 1 (M3U8)
+                            </button>
+                            {% endif %}
+                            
+                            {% if episode.video_url %}
+                            <button onclick="switchServer('direct', '{{ episode.video_url }}')" 
+                                    id="server-direct"
+                                    class="server-btn flex items-center px-4 py-2 rounded-lg bg-slate-600 hover:bg-slate-700 text-white font-medium transition-all duration-200">
+                                <i class="fas fa-video mr-2"></i>
+                                Direct Video
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Video Player -->
+                    <div class="video-container mb-6">
+                        <video id="player" controls crossorigin playsinline>
+                            {% if episode.server_m3u8_url %}
+                            <source src="{{ episode.server_m3u8_url }}" type="application/x-mpegURL">
+                            {% endif %}
+                            {% if episode.video_url %}
+                            <source src="{{ episode.video_url }}" type="video/mp4">
+                            {% endif %}
+                            Your browser does not support the video tag.
+                        </video>
+                    </div>
+
+                    <!-- Episode Information -->
+                    <div class="glass-card rounded-2xl p-6">
+                        <h1 class="text-2xl font-bold text-white mb-2">{{ episode.title }}</h1>
+                        <h2 class="text-lg text-slate-300 mb-4">{{ content.title }} - Episode {{ episode.episode_number }}</h2>
+                        
+                        {% if episode.synopsis %}
+                        <div class="mb-4">
+                            <h3 class="text-lg font-semibold text-white mb-2">Synopsis</h3>
+                            <p class="text-slate-300 leading-relaxed">{{ episode.synopsis }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- HLS.js Library -->
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.15/dist/hls.min.js"></script>
+
+<!-- Plyr Video Player -->
+<script src="https://cdn.plyr.io/3.7.8/plyr.js"></script>
+
+<script>
+console.log('🎬 Simple Video Player Starting...');
+
+let player;
+let hls;
+
+document.addEventListener('DOMContentLoaded', function() {
+    const video = document.getElementById('player');
+    
+    // Initialize Plyr player
+    player = new Plyr(video, {
+        controls: [
+            'play-large', 'play', 'progress', 'current-time', 'duration',
+            'mute', 'volume', 'settings', 'fullscreen'
+        ],
+        settings: ['quality', 'speed'],
+        ratio: '16:9'
+    });
+    
+    // Get default M3U8 source
+    const m3u8Source = '{{ episode.server_m3u8_url }}';
+    
+    if (m3u8Source && Hls.isSupported()) {
+        console.log('🎬 Initializing HLS.js for M3U8');
+        
+        hls = new Hls({
+            debug: false,
+            enableWorker: true
+        });
+        
+        hls.loadSource(m3u8Source);
+        hls.attachMedia(video);
+        
+        hls.on(Hls.Events.MANIFEST_PARSED, function() {
+            console.log('✅ HLS manifest parsed successfully');
+        });
+        
+        hls.on(Hls.Events.ERROR, function(event, data) {
+            console.error('❌ HLS Error:', data);
+        });
+        
+    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        // Safari native HLS support
+        console.log('🎬 Using native HLS support');
+        video.src = m3u8Source;
+    }
+    
+    console.log('✅ Player initialized successfully');
+});
+
+function switchServer(serverType, serverUrl) {
+    console.log('🎬 Switching to server:', serverType, serverUrl);
+    
+    // Update button styles
+    document.querySelectorAll('.server-btn').forEach(btn => {
+        btn.classList.remove('bg-green-600', 'bg-blue-600');
+        btn.classList.add('bg-slate-600');
+    });
+    
+    const activeBtn = document.getElementById('server-' + serverType);
+    if (activeBtn) {
+        activeBtn.classList.remove('bg-slate-600');
+        activeBtn.classList.add('bg-green-600');
+    }
+    
+    const video = document.getElementById('player');
+    
+    if (serverType === 'm3u8' && Hls.isSupported()) {
+        // Use HLS.js for M3U8
+        if (hls) {
+            hls.destroy();
+        }
+        
+        hls = new Hls({
+            debug: false,
+            enableWorker: true
+        });
+        
+        hls.loadSource(serverUrl);
+        hls.attachMedia(video);
+        
+        hls.on(Hls.Events.MANIFEST_PARSED, function() {
+            console.log('✅ New HLS stream loaded');
+        });
+        
+    } else {
+        // Direct video
+        if (hls) {
+            hls.destroy();
+            hls = null;
+        }
+        video.src = serverUrl;
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,2534 @@
+{% extends "responsive_base.html" %}
+
+{% block title %}{{ episode.title }} - {{ content.title }} - AniFlix{% endblock %}
+
+{% block head %}
+<!-- Professional M3U8 Player with HLS.js and Captions -->
+<link rel="stylesheet" href="https://code-reserve.web.app/2.0.1/player.css">
+<script src="https://code-reserve.web.app/2.0.1/hls.js" defer></script>
+<script src="https://code-reserve.web.app/2.0.1/player.js" defer></script>
+
+<style>
+/* Simple Clean Video Player Container */
+.ultra-pro-video-wrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #1e293b;
+    border: 1px solid #334155;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Simple Video Element Styling */
+#video-player, 
+.ultra-professional-player {
+    width: 100% !important;
+    height: 100% !important;
+    border-radius: 12px;
+    background: #000000;
+    position: relative;
+    outline: none;
+}
+
+/* Simple Control Bar */
+#video-player::-webkit-media-controls-panel,
+.ultra-professional-player::-webkit-media-controls-panel {
+    background: rgba(0, 0, 0, 0.8) !important;
+    border-radius: 0 0 12px 12px !important;
+}
+
+/* Simple Play Button */
+#video-player::-webkit-media-controls-play-button,
+.ultra-professional-player::-webkit-media-controls-play-button {
+    color: white !important;
+}
+
+#video-player.video-professional::-webkit-media-controls-play-button:hover,
+#video-player.video-professional::-webkit-media-controls-mute-button:hover,
+#video-player.video-professional::-webkit-media-controls-fullscreen-button:hover {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.5), rgba(220, 38, 38, 0.3));
+    border-color: rgba(239, 68, 68, 0.6);
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+    transform: scale(1.05);
+}
+
+/* Simple Timeline */
+#video-player::-webkit-media-controls-timeline,
+.ultra-professional-player::-webkit-media-controls-timeline {
+    background: rgba(255, 255, 255, 0.3) !important;
+    height: 4px !important;
+}
+
+/* Simple Time and Controls */
+#video-player::-webkit-media-controls-current-time-display,
+#video-player::-webkit-media-controls-time-remaining-display,
+.ultra-professional-player::-webkit-media-controls-current-time-display,
+.ultra-professional-player::-webkit-media-controls-time-remaining-display {
+    color: white !important;
+    font-size: 14px !important;
+}
+
+#video-player::-webkit-media-controls-mute-button,
+#video-player::-webkit-media-controls-fullscreen-button,
+.ultra-professional-player::-webkit-media-controls-mute-button,
+.ultra-professional-player::-webkit-media-controls-fullscreen-button {
+    color: white !important;
+}
+
+#video-player.video-professional:hover {
+    border-color: rgba(239, 68, 68, 0.4);
+    box-shadow: 
+        0 60px 120px rgba(0, 0, 0, 0.9),
+        0 32px 64px rgba(0, 0, 0, 0.7),
+        0 16px 32px rgba(0, 0, 0, 0.5),
+        inset 0 3px 0 rgba(255, 255, 255, 0.2),
+        inset 0 0 120px rgba(239, 68, 68, 0.15),
+        0 0 80px rgba(239, 68, 68, 0.3);
+    transform: translateY(-3px) scale(1.01);
+}
+
+/* Ultra-Professional Video.js Control Bar */
+#video-player.video-professional::-webkit-media-controls-enclosure {
+    background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.95) 60%, rgba(0,0,0,0.98) 100%);
+    border-radius: 0 0 24px 24px;
+    backdrop-filter: blur(25px);
+    border-top: 2px solid rgba(239, 68, 68, 0.2);
+    box-shadow: 
+        0 -15px 40px rgba(0, 0, 0, 0.6),
+        inset 0 2px 8px rgba(255, 255, 255, 0.1);
+}
+
+/* Enhanced Progress Timeline */
+#video-player.video-professional::-webkit-media-controls-timeline {
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.2));
+    border-radius: 12px;
+    height: 10px;
+    border: 2px solid rgba(239, 68, 68, 0.15);
+    box-shadow: 
+        inset 0 3px 8px rgba(0, 0, 0, 0.4),
+        0 2px 10px rgba(239, 68, 68, 0.2);
+    position: relative;
+    overflow: hidden;
+}
+
+#video-player.video-professional::-webkit-media-controls-timeline:hover {
+    height: 12px;
+    border-color: rgba(239, 68, 68, 0.4);
+    box-shadow: 
+        inset 0 3px 8px rgba(0, 0, 0, 0.5),
+        0 4px 15px rgba(239, 68, 68, 0.4);
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.25));
+}
+
+/* Professional Current Progress */
+#video-player.video-professional::-webkit-media-controls-current-time-display {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.3));
+    color: white;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    text-shadow: 0 3px 6px rgba(0, 0, 0, 0.8);
+    border-radius: 12px;
+    padding: 6px 12px;
+    margin: 0 8px;
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    box-shadow: 
+        0 6px 20px rgba(239, 68, 68, 0.3),
+        inset 0 1px 3px rgba(255, 255, 255, 0.2);
+}
+
+#video-player.video-professional::-webkit-media-controls-time-remaining-display {
+    background: linear-gradient(135deg, rgba(100, 116, 139, 0.3), rgba(71, 85, 105, 0.4));
+    color: rgba(255, 255, 255, 0.9);
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.7);
+    border-radius: 10px;
+    padding: 5px 10px;
+    margin: 0 6px;
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 
+        0 4px 12px rgba(0, 0, 0, 0.3),
+        inset 0 1px 2px rgba(255, 255, 255, 0.15);
+}
+
+/* Ultra-Professional Button Styling */
+#video-player.video-professional::-webkit-media-controls-play-button {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.4), rgba(220, 38, 38, 0.3));
+    color: white;
+    border-radius: 16px;
+    border: 2px solid rgba(239, 68, 68, 0.5);
+    backdrop-filter: blur(12px);
+    box-shadow: 
+        0 8px 25px rgba(239, 68, 68, 0.4),
+        inset 0 2px 4px rgba(255, 255, 255, 0.2);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 50px;
+    height: 38px;
+    margin: 0 6px;
+}
+
+#video-player.video-professional::-webkit-media-controls-play-button:hover {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.6), rgba(220, 38, 38, 0.5));
+    border-color: rgba(239, 68, 68, 0.7);
+    box-shadow: 
+        0 12px 35px rgba(239, 68, 68, 0.5),
+        inset 0 2px 6px rgba(255, 255, 255, 0.25);
+    transform: scale(1.08) translateY(-2px);
+}
+
+#video-player.video-professional::-webkit-media-controls-mute-button,
+#video-player.video-professional::-webkit-media-controls-fullscreen-button {
+    background: linear-gradient(135deg, rgba(100, 116, 139, 0.3), rgba(71, 85, 105, 0.4));
+    color: white;
+    border-radius: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    box-shadow: 
+        0 6px 20px rgba(0, 0, 0, 0.3),
+        inset 0 2px 4px rgba(255, 255, 255, 0.15);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 44px;
+    height: 36px;
+    margin: 0 4px;
+}
+
+#video-player.video-professional::-webkit-media-controls-mute-button:hover,
+#video-player.video-professional::-webkit-media-controls-fullscreen-button:hover {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.4), rgba(220, 38, 38, 0.3));
+    border-color: rgba(239, 68, 68, 0.4);
+    box-shadow: 
+        0 8px 25px rgba(239, 68, 68, 0.3),
+        inset 0 2px 6px rgba(255, 255, 255, 0.2);
+    transform: scale(1.05) translateY(-1px);
+}
+
+/* Professional Volume Control */
+#video-player.video-professional::-webkit-media-controls-volume-slider {
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.2));
+    border-radius: 8px;
+    height: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Professional Video Container Styling */
+.video-player-container {
+    position: relative;
+    border-radius: 28px;
+    overflow: hidden;
+    background: linear-gradient(145deg, rgba(0,0,0,0.95) 0%, rgba(15,23,42,0.95) 50%, rgba(30,41,59,0.95) 100%);
+    border: 3px solid rgba(239, 68, 68, 0.25);
+    padding: 12px;
+    box-shadow: 
+        0 40px 80px rgba(0, 0, 0, 0.7),
+        0 20px 40px rgba(0, 0, 0, 0.5),
+        0 10px 20px rgba(0, 0, 0, 0.3),
+        0 0 120px rgba(239, 68, 68, 0.15),
+        inset 0 3px 6px rgba(255, 255, 255, 0.1);
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.video-player-container:hover {
+    border-color: rgba(239, 68, 68, 0.4);
+    box-shadow: 
+        0 50px 100px rgba(0, 0, 0, 0.8),
+        0 25px 50px rgba(0, 0, 0, 0.6),
+        0 12px 25px rgba(0, 0, 0, 0.4),
+        0 0 150px rgba(239, 68, 68, 0.25),
+        inset 0 4px 8px rgba(255, 255, 255, 0.15);
+    transform: translateY(-4px) scale(1.005);
+}
+
+.video-js .vjs-big-play-button {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 50%, #b91c1c 100%);
+    border: 6px solid rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(16px) saturate(180%);
+    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    font-size: 42px;
+    box-shadow: 
+        0 16px 40px rgba(239, 68, 68, 0.5),
+        0 8px 20px rgba(0, 0, 0, 0.3),
+        inset 0 2px 4px rgba(255, 255, 255, 0.2);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    position: relative;
+}
+
+.video-js .vjs-big-play-button:hover {
+    background: linear-gradient(135deg, #f87171 0%, #ef4444 50%, #dc2626 100%);
+    border-color: white;
+    transform: translate(-50%, -50%) scale(1.15);
+    box-shadow: 
+        0 24px 60px rgba(239, 68, 68, 0.7),
+        0 12px 30px rgba(0, 0, 0, 0.4),
+        inset 0 2px 8px rgba(255, 255, 255, 0.3);
+}
+
+.video-js .vjs-big-play-button:before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 80px;
+    height: 80px;
+    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
+
+.video-js .vjs-play-control,
+.video-js .vjs-volume-control,
+.video-js .vjs-fullscreen-control {
+    color: white;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 12px;
+    border-radius: 12px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    backdrop-filter: blur(8px);
+    font-size: 18px;
+    margin: 0 4px;
+}
+
+.video-js .vjs-play-control:hover,
+.video-js .vjs-volume-control:hover,
+.video-js .vjs-fullscreen-control:hover {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.4);
+    transform: scale(1.05);
+    box-shadow: 0 5px 15px rgba(239, 68, 68, 0.3);
+}
+
+.video-js .vjs-volume-panel {
+    margin: 0 8px;
+}
+
+.video-js .vjs-volume-bar {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    height: 6px;
+}
+
+.video-js .vjs-volume-level {
+    background: linear-gradient(90deg, #ef4444, #f87171);
+    border-radius: 6px;
+}
+
+/* Professional Video.js Player Class */
+.video-js.vjs-professional {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
+    border-radius: 16px !important;
+    overflow: hidden !important;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5) !important;
+}
+
+.video-js.vjs-professional .vjs-poster {
+    border-radius: 16px;
+    background-size: cover;
+    background-position: center;
+}
+
+.video-js.vjs-professional .vjs-tech {
+    border-radius: 16px;
+}
+
+/* Hide/customize default Video.js UI elements */
+.video-js .vjs-menu-button .vjs-menu .vjs-menu-content {
+    background: linear-gradient(145deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.95));
+    backdrop-filter: blur(20px);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    overflow: hidden;
+}
+
+.video-js .vjs-menu .vjs-menu-item {
+    color: white;
+    padding: 12px 16px;
+    transition: all 0.2s ease;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.video-js .vjs-menu .vjs-menu-item:hover {
+    background: linear-gradient(90deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.1));
+    color: #ef4444;
+}
+
+/* Hide download button */
+.video-js .vjs-download-button,
+.video-js .vjs-picture-in-picture-control {
+    display: none !important;
+}
+
+/* Custom loading spinner for Video.js */
+.video-js .vjs-loading-spinner {
+    border-color: #ef4444 transparent transparent transparent !important;
+    border-width: 4px !important;
+    width: 60px !important;
+    height: 60px !important;
+}
+
+/* Professional Subtitle Styling */
+.video-js .vjs-text-track-display {
+    pointer-events: none;
+}
+
+.video-js .vjs-text-track-display div {
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.7));
+    backdrop-filter: blur(8px);
+    border-radius: 12px;
+    padding: 12px 20px;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
+    font-size: 18px;
+    line-height: 1.4;
+    color: white;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    margin: 0 auto 20px;
+    max-width: 80%;
+    text-align: center;
+}
+
+/* Enhance the control bar visibility */
+.video-js:hover .vjs-control-bar {
+    opacity: 1 !important;
+    transform: translateY(0) !important;
+}
+
+.video-js .vjs-control-bar {
+    opacity: 0.95 !important;
+    transition: all 0.3s ease !important;
+    transform: translateY(10px);
+}
+
+.video-js .vjs-progress-control {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    height: 10px;
+    margin: 0 20px;
+    flex-grow: 1;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.video-js .vjs-progress-holder {
+    border-radius: 10px;
+    height: 10px;
+    overflow: hidden;
+}
+
+.video-js .vjs-play-progress {
+    background: linear-gradient(90deg, #ef4444, #f87171, #dc2626);
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+    position: relative;
+}
+
+.video-js .vjs-play-progress:before {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 50%;
+    width: 16px;
+    height: 16px;
+    background: #ef4444;
+    border-radius: 50%;
+    transform: translateY(-50%);
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.8);
+    border: 2px solid white;
+}
+
+.video-js .vjs-load-progress {
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 10px;
+}
+
+.video-js .vjs-time-control {
+    color: white;
+    font-weight: 600;
+    font-size: 15px;
+    padding: 0 12px;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.video-js .vjs-current-time {
+    color: #ef4444;
+}
+
+.video-js .vjs-duration {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+/* Professional Subtitle Styling */
+.video-js .vjs-text-track-display {
+    font-family: 'Poppins', sans-serif !important;
+    font-size: 18px !important;
+    font-weight: 600 !important;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8) !important;
+    background: rgba(0, 0, 0, 0.7) !important;
+    border-radius: 8px !important;
+    padding: 8px 16px !important;
+    margin: 0 auto 32px auto !important;
+    backdrop-filter: blur(8px) !important;
+}
+
+.video-js .vjs-text-track-cue {
+    background: transparent !important;
+    color: white !important;
+    line-height: 1.5 !important;
+}
+
+/* Custom Subtitle Menu */
+.subtitle-menu {
+    position: absolute;
+    bottom: 80px;
+    right: 24px;
+    display: none;
+    background: rgba(0, 0, 0, 0.9);
+    backdrop-filter: blur(16px);
+    border-radius: 12px;
+    padding: 12px;
+    min-width: 200px;
+    z-index: 1000;
+    transform: translateY(10px);
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.subtitle-menu.active {
+    transform: translateY(0);
+    opacity: 1;
+    visibility: visible;
+}
+
+.subtitle-option {
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    color: white;
+    font-size: 14px;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+}
+
+.subtitle-option:hover {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+.subtitle-option.active {
+    background: rgba(239, 68, 68, 0.3);
+    border-color: #ef4444;
+    color: #ef4444;
+    font-weight: 600;
+}
+
+/* Professional Quality Menu */
+.quality-menu {
+    position: absolute;
+    bottom: 80px;
+    right: 180px;
+    display: none;
+    background: rgba(0, 0, 0, 0.9);
+    backdrop-filter: blur(16px);
+    border-radius: 12px;
+    padding: 12px;
+    min-width: 150px;
+    z-index: 1000;
+    transform: translateY(10px);
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.quality-menu.active {
+    transform: translateY(0);
+    opacity: 1;
+    visibility: visible;
+}
+
+.quality-option {
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    color: white;
+    font-size: 14px;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+}
+
+.quality-option:hover {
+    background: rgba(59, 130, 246, 0.2);
+    border-color: rgba(59, 130, 246, 0.3);
+}
+
+.quality-option.active {
+    background: rgba(59, 130, 246, 0.3);
+    border-color: #3b82f6;
+    color: #3b82f6;
+    font-weight: 600;
+}
+
+.glass-card {
+    background: rgba(30, 41, 59, 0.6);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.episode-grid {
+    scrollbar-width: thin;
+    scrollbar-color: #ef4444 rgba(255, 255, 255, 0.1);
+}
+
+.episode-grid::-webkit-scrollbar {
+    height: 8px;
+}
+
+.episode-grid::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+}
+
+.episode-grid::-webkit-scrollbar-thumb {
+    background: #ef4444;
+    border-radius: 4px;
+}
+
+.custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #ef4444 rgba(255, 255, 255, 0.1);
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #ef4444;
+    border-radius: 3px;
+}
+
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.upgrade-overlay {
+    background: linear-gradient(135deg, rgba(0,0,0,0.9) 0%, rgba(15,23,42,0.95) 100%);
+    backdrop-filter: blur(20px);
+}
+
+.episode-card {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.episode-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+}
+
+/* Enhanced glassmorphism effects */
+.glass-card {
+    background: rgba(30, 41, 59, 0.5);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(148, 163, 184, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.glass-card:hover {
+    border-color: rgba(148, 163, 184, 0.2);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+}
+
+/* Improved server button animations */
+/* Ultra-Professional Server Button Styling */
+.server-btn {
+    position: relative;
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    backdrop-filter: blur(15px);
+    border: 2px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 
+        0 8px 25px rgba(0, 0, 0, 0.4),
+        inset 0 1px 3px rgba(255, 255, 255, 0.1);
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.8)) !important;
+    font-weight: 600 !important;
+    border-radius: 16px !important;
+    padding: 12px 20px !important;
+    margin: 0 6px !important;
+}
+
+.server-btn:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.4), transparent);
+    transition: left 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: -1;
+}
+
+.server-btn:hover {
+    border-color: rgba(239, 68, 68, 0.5) !important;
+    box-shadow: 
+        0 15px 40px rgba(239, 68, 68, 0.4),
+        inset 0 2px 6px rgba(255, 255, 255, 0.2) !important;
+    transform: translateY(-3px) scale(1.05);
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.3), rgba(220, 38, 38, 0.4)) !important;
+}
+
+.server-btn:hover:before {
+    left: 100%;
+}
+
+.server-btn:active {
+    transform: translateY(-1px) scale(1.02);
+    box-shadow: 
+        0 8px 20px rgba(239, 68, 68, 0.3),
+        inset 0 1px 3px rgba(255, 255, 255, 0.15) !important;
+}
+
+/* Progress bar enhancements */
+.progress-bar {
+    background: linear-gradient(90deg, #ef4444 0%, #dc2626 50%, #b91c1c 100%);
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+}
+
+/* Professional Loading Animations */
+.border-6 {
+    border-width: 6px;
+}
+
+@keyframes professional-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Enhanced Video Player Wrapper */
+.video-wrapper {
+    background: linear-gradient(145deg, rgba(0,0,0,0.9) 0%, rgba(15,23,42,0.9) 100%);
+    border: 2px solid rgba(239, 68, 68, 0.2);
+    border-radius: 24px;
+    padding: 8px;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 
+        0 25px 50px rgba(0, 0, 0, 0.6),
+        0 0 100px rgba(239, 68, 68, 0.1),
+        inset 0 2px 4px rgba(255, 255, 255, 0.1);
+}
+
+.video-wrapper:hover {
+    border-color: rgba(239, 68, 68, 0.4);
+    box-shadow: 
+        0 35px 70px rgba(0, 0, 0, 0.7),
+        0 0 150px rgba(239, 68, 68, 0.2),
+        inset 0 2px 4px rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
+}
+
+/* Network Error Styling */
+.network-error {
+    background: linear-gradient(135deg, rgba(220, 38, 38, 0.1) 0%, rgba(185, 28, 28, 0.05) 100%);
+    border: 2px solid rgba(220, 38, 38, 0.3);
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    animation: errorPulse 2s ease-in-out infinite;
+}
+
+@keyframes errorPulse {
+    0%, 100% { 
+        border-color: rgba(220, 38, 38, 0.3);
+        box-shadow: 0 0 20px rgba(220, 38, 38, 0.2);
+    }
+    50% { 
+        border-color: rgba(220, 38, 38, 0.5);
+        box-shadow: 0 0 40px rgba(220, 38, 38, 0.4);
+    }
+}
+
+/* Ultra-Professional Video Player Enhancements */
+#video-player {
+    border-radius: 20px !important;
+    box-shadow: 
+        0 32px 64px -12px rgba(0, 0, 0, 0.8) !important,
+        0 20px 25px -5px rgba(0, 0, 0, 0.5) !important,
+        0 0 0 3px rgba(239, 68, 68, 0.3) !important,
+        inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 30%, #0f172a 100%) !important;
+    border: 3px solid rgba(239, 68, 68, 0.4) !important;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+#video-player:hover {
+    box-shadow: 
+        0 40px 80px -12px rgba(239, 68, 68, 0.5) !important,
+        0 25px 35px -5px rgba(0, 0, 0, 0.6) !important,
+        0 0 0 3px rgba(239, 68, 68, 0.5) !important,
+        inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+    border-color: rgba(239, 68, 68, 0.6) !important;
+    transform: translateY(-4px) scale(1.01) !important;
+}
+
+/* Professional Video Controls Styling */
+#video-player::-webkit-media-controls {
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.95) 0%, rgba(15, 23, 42, 0.95) 100%) !important;
+    border-radius: 0 0 17px 17px !important;
+    backdrop-filter: blur(25px) !important;
+    border-top: 2px solid rgba(239, 68, 68, 0.4) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+}
+
+#video-player::-webkit-media-controls-panel {
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.98) 0%, rgba(0, 0, 0, 0.95) 100%) !important;
+    border-radius: 0 0 17px 17px !important;
+    backdrop-filter: blur(25px) !important;
+    border-top: 2px solid rgba(239, 68, 68, 0.3) !important;
+    padding: 12px !important;
+}
+
+#video-player::-webkit-media-controls-play-button {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 50%, #b91c1c 100%) !important;
+    border-radius: 12px !important;
+    filter: drop-shadow(0 6px 12px rgba(239, 68, 68, 0.5)) !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    width: 56px !important;
+    height: 56px !important;
+    border: 2px solid rgba(255, 255, 255, 0.2) !important;
+    margin: 0 8px !important;
+}
+
+#video-player::-webkit-media-controls-play-button:hover {
+    background: linear-gradient(135deg, #f87171 0%, #ef4444 50%, #dc2626 100%) !important;
+    transform: scale(1.15) !important;
+    filter: drop-shadow(0 8px 16px rgba(239, 68, 68, 0.6)) !important;
+    border-color: rgba(255, 255, 255, 0.4) !important;
+}
+
+#video-player::-webkit-media-controls-timeline {
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 41, 59, 0.9) 100%) !important;
+    border-radius: 15px !important;
+    height: 12px !important;
+    margin: 0 16px !important;
+    border: 2px solid rgba(239, 68, 68, 0.3) !important;
+    box-shadow: 
+        inset 0 2px 4px rgba(0, 0, 0, 0.4),
+        0 2px 8px rgba(239, 68, 68, 0.2) !important;
+}
+
+#video-player::-webkit-media-controls-current-time-display,
+#video-player::-webkit-media-controls-time-remaining-display {
+    color: #ffffff !important;
+    font-weight: 800 !important;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8) !important;
+    font-family: 'Inter', 'SF Pro Display', system-ui, sans-serif !important;
+    font-size: 16px !important;
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 41, 59, 0.8) 100%) !important;
+    padding: 6px 12px !important;
+    border-radius: 10px !important;
+    border: 2px solid rgba(239, 68, 68, 0.3) !important;
+    margin: 0 4px !important;
+    backdrop-filter: blur(15px) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+#video-player::-webkit-media-controls-volume-slider {
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 41, 59, 0.9) 100%) !important;
+    border-radius: 10px !important;
+    height: 10px !important;
+    border: 2px solid rgba(239, 68, 68, 0.3) !important;
+    margin: 0 8px !important;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+}
+
+#video-player::-webkit-media-controls-fullscreen-button {
+    background: linear-gradient(135deg, #1f2937 0%, #374151 50%, #4b5563 100%) !important;
+    border-radius: 10px !important;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.6)) !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    border: 2px solid rgba(239, 68, 68, 0.3) !important;
+    width: 48px !important;
+    height: 48px !important;
+    margin: 0 4px !important;
+}
+
+#video-player::-webkit-media-controls-fullscreen-button:hover {
+    background: linear-gradient(135deg, #374151 0%, #4b5563 50%, #6b7280 100%) !important;
+    transform: scale(1.1) !important;
+    border-color: rgba(239, 68, 68, 0.5) !important;
+    filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.7)) !important;
+}
+
+/* Enhanced Video Container with Professional Glow */
+.video-player-container {
+    position: relative;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+    border-radius: 32px;
+    padding: 16px;
+    box-shadow: 
+        0 40px 80px -12px rgba(0, 0, 0, 0.7),
+        0 0 0 1px rgba(239, 68, 68, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    border: 2px solid rgba(239, 68, 68, 0.15);
+}
+
+.video-player-container::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, transparent 30%, transparent 70%, rgba(147, 51, 234, 0.1) 100%);
+    border-radius: 32px;
+    pointer-events: none;
+    animation: professionalGlow 4s ease-in-out infinite alternate;
+}
+
+@keyframes professionalGlow {
+    0% { 
+        opacity: 0.8;
+        filter: blur(1px);
+    }
+    100% { 
+        opacity: 1;
+        filter: blur(0px);
+    }
+}
+
+/* Ultra-Professional Cinema Video Player */
+.ultra-pro-video-wrapper {
+    position: relative;
+    background: linear-gradient(145deg, #0a0f1a 0%, #1a1f2e 50%, #0a0f1a 100%);
+    border-radius: 24px;
+    padding: 20px;
+    box-shadow: 
+        0 50px 100px -20px rgba(0, 0, 0, 0.8),
+        0 30px 60px -12px rgba(239, 68, 68, 0.3),
+        0 0 0 1px rgba(239, 68, 68, 0.4),
+        inset 0 2px 4px rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(239, 68, 68, 0.3);
+    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ultra-pro-video-wrapper::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    background: linear-gradient(45deg, 
+        rgba(239, 68, 68, 0.3) 0%, 
+        rgba(147, 51, 234, 0.2) 25%, 
+        rgba(59, 130, 246, 0.2) 50%, 
+        rgba(16, 185, 129, 0.2) 75%, 
+        rgba(239, 68, 68, 0.3) 100%);
+    border-radius: 26px;
+    z-index: -1;
+    animation: cinemaGlow 3s ease-in-out infinite;
+}
+
+.ultra-pro-video-wrapper:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 
+        0 60px 120px -20px rgba(0, 0, 0, 0.9),
+        0 40px 80px -12px rgba(239, 68, 68, 0.5),
+        0 0 0 2px rgba(239, 68, 68, 0.6),
+        inset 0 2px 4px rgba(255, 255, 255, 0.15);
+}
+
+@keyframes cinemaGlow {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+}
+
+.ultra-professional-player {
+    border-radius: 16px !important;
+    background: linear-gradient(145deg, #000000 0%, #1a1a2e 50%, #16213e 100%) !important;
+    box-shadow: 
+        inset 0 4px 8px rgba(0, 0, 0, 0.6),
+        inset 0 0 0 1px rgba(239, 68, 68, 0.2) !important;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.ultra-professional-player:hover {
+    box-shadow: 
+        inset 0 4px 8px rgba(0, 0, 0, 0.8),
+        inset 0 0 0 2px rgba(239, 68, 68, 0.4) !important;
+}
+
+/* Cinema-Grade Control Bar */
+.ultra-professional-player::-webkit-media-controls-panel {
+    background: linear-gradient(180deg, 
+        rgba(0, 0, 0, 0) 0%, 
+        rgba(0, 0, 0, 0.3) 30%, 
+        rgba(15, 23, 42, 0.95) 70%, 
+        rgba(0, 0, 0, 0.98) 100%) !important;
+    border-radius: 0 0 14px 14px !important;
+    backdrop-filter: blur(30px) saturate(150%) !important;
+    border-top: 3px solid rgba(239, 68, 68, 0.4) !important;
+    padding: 16px 20px !important;
+    box-shadow: 
+        0 -8px 32px rgba(0, 0, 0, 0.6),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Cinema Play Button */
+.ultra-professional-player::-webkit-media-controls-play-button {
+    background: linear-gradient(135deg, 
+        #ef4444 0%, 
+        #dc2626 25%, 
+        #b91c1c 50%, 
+        #991b1b 75%, 
+        #7f1d1d 100%) !important;
+    border-radius: 20px !important;
+    width: 64px !important;
+    height: 64px !important;
+    margin: 0 16px !important;
+    border: 3px solid rgba(255, 255, 255, 0.3) !important;
+    box-shadow: 
+        0 8px 25px rgba(239, 68, 68, 0.6),
+        0 4px 12px rgba(0, 0, 0, 0.4),
+        inset 0 2px 4px rgba(255, 255, 255, 0.2) !important;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    position: relative !important;
+}
+
+.ultra-professional-player::-webkit-media-controls-play-button:hover {
+    background: linear-gradient(135deg, 
+        #f87171 0%, 
+        #ef4444 25%, 
+        #dc2626 50%, 
+        #b91c1c 75%, 
+        #991b1b 100%) !important;
+    transform: scale(1.2) !important;
+    box-shadow: 
+        0 12px 35px rgba(239, 68, 68, 0.8),
+        0 6px 20px rgba(0, 0, 0, 0.6),
+        inset 0 2px 4px rgba(255, 255, 255, 0.3) !important;
+    border-color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* Premium Timeline */
+.ultra-professional-player::-webkit-media-controls-timeline {
+    background: linear-gradient(135deg, 
+        rgba(15, 23, 42, 0.9) 0%, 
+        rgba(30, 41, 59, 0.8) 50%, 
+        rgba(51, 65, 85, 0.9) 100%) !important;
+    border-radius: 20px !important;
+    height: 16px !important;
+    margin: 0 20px !important;
+    border: 3px solid rgba(239, 68, 68, 0.4) !important;
+    box-shadow: 
+        inset 0 4px 8px rgba(0, 0, 0, 0.6),
+        0 4px 12px rgba(239, 68, 68, 0.3),
+        0 0 0 1px rgba(255, 255, 255, 0.1) !important;
+    backdrop-filter: blur(10px) !important;
+    transition: all 0.3s ease !important;
+}
+
+.ultra-professional-player::-webkit-media-controls-timeline:hover {
+    border-color: rgba(239, 68, 68, 0.7) !important;
+    box-shadow: 
+        inset 0 4px 8px rgba(0, 0, 0, 0.8),
+        0 6px 20px rgba(239, 68, 68, 0.5),
+        0 0 0 2px rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Elite Time Displays */
+.ultra-professional-player::-webkit-media-controls-current-time-display,
+.ultra-professional-player::-webkit-media-controls-time-remaining-display {
+    color: #ffffff !important;
+    font-weight: 900 !important;
+    font-size: 18px !important;
+    font-family: 'SF Pro Display', 'Inter', system-ui, sans-serif !important;
+    text-shadow: 0 3px 12px rgba(0, 0, 0, 0.9) !important;
+    background: linear-gradient(135deg, 
+        rgba(15, 23, 42, 0.95) 0%, 
+        rgba(30, 41, 59, 0.9) 50%,
+        rgba(51, 65, 85, 0.95) 100%) !important;
+    padding: 10px 16px !important;
+    border-radius: 16px !important;
+    border: 2px solid rgba(239, 68, 68, 0.4) !important;
+    margin: 0 8px !important;
+    backdrop-filter: blur(20px) saturate(120%) !important;
+    box-shadow: 
+        0 6px 20px rgba(0, 0, 0, 0.5),
+        inset 0 1px 2px rgba(255, 255, 255, 0.2) !important;
+    transition: all 0.3s ease !important;
+}
+
+/* Premium Volume Control */
+.ultra-professional-player::-webkit-media-controls-volume-slider {
+    background: linear-gradient(135deg, 
+        rgba(15, 23, 42, 0.9) 0%, 
+        rgba(30, 41, 59, 0.8) 50%,
+        rgba(51, 65, 85, 0.9) 100%) !important;
+    border-radius: 12px !important;
+    height: 12px !important;
+    border: 2px solid rgba(239, 68, 68, 0.4) !important;
+    margin: 0 12px !important;
+    box-shadow: 
+        inset 0 3px 6px rgba(0, 0, 0, 0.5),
+        0 2px 8px rgba(239, 68, 68, 0.2) !important;
+    backdrop-filter: blur(8px) !important;
+}
+
+/* Cinema Fullscreen Button */
+.ultra-professional-player::-webkit-media-controls-fullscreen-button {
+    background: linear-gradient(135deg, 
+        #1f2937 0%, 
+        #374151 30%, 
+        #4b5563 60%,
+        #6b7280 100%) !important;
+    border-radius: 14px !important;
+    width: 56px !important;
+    height: 56px !important;
+    margin: 0 8px !important;
+    border: 2px solid rgba(239, 68, 68, 0.4) !important;
+    box-shadow: 
+        0 6px 16px rgba(0, 0, 0, 0.6),
+        inset 0 1px 2px rgba(255, 255, 255, 0.2) !important;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.ultra-professional-player::-webkit-media-controls-fullscreen-button:hover {
+    background: linear-gradient(135deg, 
+        #374151 0%, 
+        #4b5563 30%, 
+        #6b7280 60%,
+        #9ca3af 100%) !important;
+    transform: scale(1.15) !important;
+    border-color: rgba(239, 68, 68, 0.6) !important;
+    box-shadow: 
+        0 8px 24px rgba(0, 0, 0, 0.8),
+        inset 0 2px 4px rgba(255, 255, 255, 0.3) !important;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pt-32 pb-8">
+    <div class="container mx-auto px-4">
+        <!-- Back Button -->
+        <div class="mb-6">
+            <a href="{{ url_for('content.anime_list') }}" 
+               class="inline-flex items-center px-4 py-2 rounded-xl bg-slate-800/50 hover:bg-slate-700/50 border border-slate-600/30 text-slate-300 hover:text-white transition-all duration-200 backdrop-blur-sm">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                </svg>
+                Back to Anime List
+            </a>
+        </div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-4 gap-8">
+            
+            <!-- Main Video Section -->
+            <div class="xl:col-span-3 space-y-6">
+                
+                <!-- Server Selection -->
+                <div class="glass-card rounded-2xl p-4 mb-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-lg font-semibold text-white flex items-center">
+                            <i class="fas fa-server mr-2 text-red-500"></i>
+                            Select Server
+                        </h3>
+                        <div class="text-sm text-slate-400">
+                            Choose your preferred streaming source
+                        </div>
+                    </div>
+                    
+                    <div class="flex flex-wrap gap-3">
+                        {% if episode.server_m3u8_url %}
+                        <button onclick="switchServer('m3u8', '{{ episode.server_m3u8_url }}')" 
+                                id="server-m3u8"
+                                class="server-btn flex items-center px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white font-medium transition-all duration-200">
+                            <i class="fas fa-play-circle mr-2"></i>
+                            Server 1 (M3U8)
+                        </button>
+                        {% endif %}
+                        
+                        {% if episode.server_embed_url %}
+                        <button onclick="switchServer('embed', '{{ episode.server_embed_url }}')" 
+                                id="server-embed"
+                                class="server-btn flex items-center px-4 py-2 rounded-lg bg-slate-600 hover:bg-slate-700 text-white font-medium transition-all duration-200">
+                            <i class="fas fa-code mr-2"></i>
+                            Server 2 (Embed)
+                        </button>
+                        {% endif %}
+                        
+                        {% if episode.iqiyi_play_url %}
+                        <button onclick="switchServer('iqiyi', '{{ episode.iqiyi_play_url }}')" 
+                                id="server-iqiyi"
+                                class="server-btn flex items-center px-4 py-2 rounded-lg bg-orange-600 hover:bg-orange-700 text-white font-medium transition-all duration-200">
+                            <i class="fas fa-tachometer-alt mr-2"></i>
+                            Server 3 (iQiyi)
+                        </button>
+                        {% endif %}
+                        
+
+                        
+                        {% if episode.video_url %}
+                        <button onclick="switchServer('direct', '{{ episode.video_url }}')" 
+                                id="server-direct"
+                                class="server-btn flex items-center px-4 py-2 rounded-lg bg-slate-600 hover:bg-slate-700 text-white font-medium transition-all duration-200">
+                            <i class="fas fa-video mr-2"></i>
+                            Direct Video
+                        </button>
+                        {% endif %}
+                    </div>
+                    
+
+                </div>
+
+                <!-- Simple Clean Video Player -->
+                <div class="aspect-video relative bg-slate-800 rounded-lg overflow-hidden">
+                    <video 
+                        id="video-player" 
+                        class="w-full h-full" 
+                        controls 
+                        crossorigin 
+                        playsinline
+                        preload="auto"
+                        poster="{{ episode.thumbnail_url or content.thumbnail_url or '/static/images/default-poster.jpg' }}">
+                                
+                    <!-- Default M3U8 source -->
+                    {% if episode.server_m3u8_url %}
+                    <source type="application/x-mpegURL" src="{{ episode.server_m3u8_url }}">
+                    {% endif %}
+                    
+                    <!-- Subtitle tracks -->
+                    {% if episode.subtitle_urls %}
+                        {% set subtitle_list = episode.subtitle_urls|from_json if episode.subtitle_urls else [] %}
+                        {% for subtitle in subtitle_list %}
+                        <track
+                            kind="captions"
+                            label="{{ subtitle.language }}"
+                            srclang="{{ subtitle.language_code }}"
+                            src="{{ subtitle.url }}"
+                            {% if loop.first %}default{% endif %}>
+                        {% endfor %}
+                    {% endif %}
+                    </video>
+                                    label="Indonesian"
+                                    srclang="id"
+                                    src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.vtt">
+                                
+                                </video>
+                                
+                                <!-- Cinema-Grade Video Overlay Effects -->
+                                <div class="absolute inset-0 pointer-events-none rounded-2xl overflow-hidden">
+                                    <!-- Top Gradient Overlay -->
+                                    <div class="absolute top-0 left-0 right-0 h-20 bg-gradient-to-b from-black/30 to-transparent"></div>
+                                    <!-- Bottom Gradient Overlay -->
+                                    <div class="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-black/40 to-transparent"></div>
+                                    <!-- Side Glow Effects -->
+                                    <div class="absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-red-500/10 to-transparent"></div>
+                                    <div class="absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-purple-500/10 to-transparent"></div>
+                                </div>
+                            </div>
+                            
+                            <!-- Professional Loading Overlay -->
+                            <div id="video-loading" class="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-black/95 to-slate-900/95 backdrop-blur-md hidden rounded-2xl">
+                                <div class="text-center text-white">
+                                    <div class="relative mb-6">
+                                        <div class="w-20 h-20 border-6 border-red-500/20 border-t-red-500 rounded-full animate-spin mx-auto"></div>
+                                        <div class="absolute inset-0 w-20 h-20 border-6 border-transparent border-l-red-400 rounded-full animate-ping mx-auto"></div>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <p class="text-xl font-semibold">Loading Professional Player</p>
+                                        <p class="text-sm text-slate-300">Please wait while we prepare your content...</p>
+                                    </div>
+                                    <div class="mt-4 flex justify-center space-x-1">
+                                        <div class="w-2 h-2 bg-red-500 rounded-full animate-bounce"></div>
+                                        <div class="w-2 h-2 bg-red-500 rounded-full animate-bounce" style="animation-delay: 0.1s;"></div>
+                                        <div class="w-2 h-2 bg-red-500 rounded-full animate-bounce" style="animation-delay: 0.2s;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Embed Player (for embed URLs) -->
+                            <div id="embed-container" class="w-full h-full hidden">
+                                <iframe id="embed-player" 
+                                        class="w-full h-full rounded-2xl"
+                                        frameborder="0" 
+                                        allowfullscreen>
+                                </iframe>
+                            </div>
+                            
+                            <!-- Professional Status Indicator -->
+                            <div id="video-status" class="absolute top-4 right-4 z-20 hidden">
+                                <div class="bg-black/80 backdrop-blur-md px-3 py-2 rounded-xl border border-white/20 text-white text-sm font-medium flex items-center space-x-2">
+                                    <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                                    <span id="status-text">Playing</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Custom Professional Controls Overlay -->
+                            <div id="custom-controls" class="absolute inset-0 pointer-events-none z-10">
+                                <!-- Subtitle Menu (Hidden by default) -->
+                                <div id="subtitle-menu" class="subtitle-menu" style="display: none;">
+                                    <div class="text-white text-sm font-semibold mb-2 px-2">Subtitles</div>
+                                    <div id="subtitle-options">
+                                        <div class="subtitle-option active" data-lang="off">Off</div>
+                                        <!-- Dynamic subtitle options will be added here -->
+                                    </div>
+                                </div>
+                                
+                                <!-- Quality Menu (Hidden by default) -->
+                                <div id="quality-menu" class="quality-menu" style="display: none;">
+                                    <div class="text-white text-sm font-semibold mb-2 px-2">Quality</div>
+                                    <div id="quality-options">
+                                        <div class="quality-option active" data-quality="auto">Auto</div>
+                                        <!-- Dynamic quality options will be added here -->
+                                    </div>
+                                </div>
+                                
+                                <!-- Professional Video Controls -->
+                                <div class="absolute top-4 right-4 flex gap-3">
+                                    <!-- Subtitle Selector -->
+                                    <div class="relative">
+                                        <select id="subtitle-selector" 
+                                                class="pointer-events-auto bg-black/70 hover:bg-black/80 backdrop-blur-sm rounded-lg px-4 py-2 text-white text-sm border border-white/20 hover:border-white/40 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-500/50">
+                                            <option value="off">No Subtitles</option>
+                                            <option value="sample-en" data-url="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.vtt" data-lang="English">English</option>
+                                            <option value="sample-id" data-url="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.vtt" data-lang="Indonesian">Indonesian</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- VIP Download Menu -->
+                                    {% if current_user.is_authenticated and current_user.subscription_status == 'active' %}
+                                    <div class="relative">
+                                        <button id="download-menu-btn" 
+                                                class="pointer-events-auto bg-black/70 hover:bg-black/80 backdrop-blur-sm rounded-lg px-4 py-2 text-white text-sm border border-white/20 hover:border-white/40 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-500/50 flex items-center">
+                                            <i class="fas fa-download mr-2"></i>
+                                            Download
+                                        </button>
+                                        
+                                        <!-- Download Dropdown Menu -->
+                                        <div id="download-menu" class="absolute top-full right-0 mt-2 w-48 bg-black/90 backdrop-blur-md rounded-xl border border-white/20 shadow-2xl hidden z-50">
+                                            <div class="p-2">
+                                                <div class="text-white text-xs font-semibold mb-2 px-2 py-1 bg-red-500/20 rounded">VIP Feature</div>
+                                                
+                                                <!-- Video Download -->
+                                                <button onclick="downloadVideo()" class="w-full flex items-center px-3 py-2 text-white text-sm hover:bg-white/10 rounded-lg transition-all duration-200">
+                                                    <i class="fas fa-video mr-3 text-blue-400"></i>
+                                                    <div class="text-left">
+                                                        <div class="font-medium">Download Video</div>
+                                                        <div class="text-xs text-gray-400">HD Quality</div>
+                                                    </div>
+                                                </button>
+                                                
+                                                <!-- Subtitle Download -->
+                                                <button onclick="downloadSubtitle()" class="w-full flex items-center px-3 py-2 text-white text-sm hover:bg-white/10 rounded-lg transition-all duration-200">
+                                                    <i class="fas fa-closed-captioning mr-3 text-green-400"></i>
+                                                    <div class="text-left">
+                                                        <div class="font-medium">Download Subtitle</div>
+                                                        <div class="text-xs text-gray-400">Multiple Languages</div>
+                                                    </div>
+                                                </button>
+                                                
+                                                <!-- Audio Download -->
+                                                <button onclick="downloadAudio()" class="w-full flex items-center px-3 py-2 text-white text-sm hover:bg-white/10 rounded-lg transition-all duration-200">
+                                                    <i class="fas fa-music mr-3 text-purple-400"></i>
+                                                    <div class="text-left">
+                                                        <div class="font-medium">Download Audio</div>
+                                                        <div class="text-xs text-gray-400">Audio Only</div>
+                                                    </div>
+                                                </button>
+                                                
+                                                <!-- Picture-in-Picture -->
+                                                <button onclick="togglePictureInPicture()" class="w-full flex items-center px-3 py-2 text-white text-sm hover:bg-white/10 rounded-lg transition-all duration-200">
+                                                    <i class="fas fa-clone mr-3 text-orange-400"></i>
+                                                    <div class="text-left">
+                                                        <div class="font-medium">Picture-in-Picture</div>
+                                                        <div class="text-xs text-gray-400">Floating Player</div>
+                                                    </div>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% else %}
+                                    <!-- Non-VIP Download Button (Upgrade Prompt) -->
+                                    <div class="relative">
+                                        <button onclick="showUpgradePrompt()" 
+                                                class="pointer-events-auto bg-red-500/20 hover:bg-red-500/30 backdrop-blur-sm rounded-lg px-4 py-2 text-white text-sm border border-red-500/40 hover:border-red-500/60 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-500/50 flex items-center">
+                                            <i class="fas fa-lock mr-2 text-red-400"></i>
+                                            Download (VIP)
+                                        </button>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Time Limit Overlay for Free Users -->
+                        {% if not can_watch_full and max_watch_time %}
+                        <div id="upgrade-overlay" class="upgrade-overlay hidden absolute inset-0 flex items-center justify-center z-50">
+                            <div class="text-center text-white p-8">
+                                <div class="mb-6">
+                                    <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-white/10 mb-4">
+                                        <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m0 0v2m0-2h2m-2 0H10m10-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                    </div>
+                                    <h3 class="text-3xl font-bold mb-2">Preview Time Expired</h3>
+                                    <p class="text-xl text-gray-200 mb-6">Upgrade to VIP to watch full episodes</p>
+                                </div>
+                                <div class="space-y-4">
+                                    <a href="{{ url_for('subscription.subscription_page') }}" 
+                                       class="inline-flex items-center px-8 py-4 bg-gradient-to-r from-red-500 to-purple-600 hover:from-red-600 hover:to-purple-700 rounded-xl font-bold text-lg transition-all duration-200 transform hover:scale-105">
+                                        Upgrade to VIP
+                                    </a>
+                                    <button onclick="restartVideo()" 
+                                            class="block w-full px-6 py-3 border border-white/30 rounded-xl hover:bg-white/10 transition-all duration-200">
+                                        Watch Preview Again
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Episode Information -->
+                <div class="glass-card rounded-2xl p-6">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- Left Column - Main Info -->
+                        <div class="lg:col-span-2 space-y-4">
+                            <!-- Title Section -->
+                            <div>
+                                <h1 class="text-2xl font-bold text-white mb-2">{{ episode.title }}</h1>
+                                <h2 class="text-lg text-slate-300 mb-4">{{ content.title }} - Episode {{ episode.episode_number }}</h2>
+                                
+                                <!-- Meta Information -->
+                                <div class="flex flex-wrap items-center gap-4 text-sm text-slate-400 mb-4">
+                                    {% if content.year %}
+                                    <span class="flex items-center gap-1">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                        </svg>
+                                        {{ content.year }}
+                                    </span>
+                                    {% endif %}
+                                    {% if content.rating %}
+                                    <span class="flex items-center gap-1">
+                                        <svg class="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                        </svg>
+                                        {{ "%.1f"|format(content.rating) }}/10
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            {% if content.genre %}
+                            <div>
+                                <h5 class="text-sm font-semibold text-slate-300 mb-2">Genre</h5>
+                                <div class="flex flex-wrap gap-2">
+                                    {% for genre in content.genre.split(',') %}
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-500/20 text-purple-400 border border-purple-500/30">
+                                        {{ genre.strip() }}
+                                    </span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Right Column - Stats & Actions -->
+                        <div class="space-y-4">
+                            <div class="grid grid-cols-2 gap-3">
+                                <div class="bg-slate-800/50 rounded-xl p-3 border border-slate-600/30 text-center">
+                                    <div class="text-xl font-bold text-red-400 mb-1">{{ content.episodes|length }}</div>
+                                    <div class="text-xs text-slate-400">Episodes</div>
+                                </div>
+                                <div class="bg-slate-800/50 rounded-xl p-3 border border-slate-600/30 text-center">
+                                    <div class="text-xl font-bold text-blue-400 mb-1">{{ content.content_type.title() }}</div>
+                                    <div class="text-xs text-slate-400">Type</div>
+                                </div>
+                            </div>
+                            
+                            <!-- Episode Progress -->
+                            <div class="bg-slate-800/50 rounded-xl p-4 border border-slate-600/30">
+                                <h5 class="text-sm font-semibold text-slate-300 mb-3">Progress</h5>
+                                <div class="space-y-2">
+                                    <div class="flex justify-between text-sm">
+                                        <span class="text-slate-400">Ep {{ episode.episode_number }} / {{ content.total_episodes or content.episodes|length }}</span>
+                                        <span class="text-slate-300">{{ progress_percentage }}%</span>
+                                    </div>
+                                    <div class="w-full bg-slate-700 rounded-full h-2">
+                                        <div class="bg-gradient-to-r from-red-500 to-purple-600 h-2 rounded-full transition-all duration-300" 
+                                             style="width: {{ progress_percentage }}%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Quick Actions -->
+                            <div class="space-y-2">
+                                <button onclick="toggleWatchlist('{{ content.id }}')" 
+                                        class="w-full flex items-center justify-center gap-2 px-4 py-3 bg-slate-700/50 hover:bg-slate-600/50 rounded-xl border border-slate-600/30 text-slate-300 hover:text-white transition-all duration-200">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                                    </svg>
+                                    Watchlist
+                                </button>
+                                <button onclick="rateAnime('{{ content.id }}')" 
+                                        class="w-full flex items-center justify-center gap-2 px-4 py-3 bg-slate-700/50 hover:bg-slate-600/50 rounded-xl border border-slate-600/30 text-slate-300 hover:text-white transition-all duration-200">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path>
+                                    </svg>
+                                    Rate
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Description -->
+                    {% if content.description %}
+                    <div class="mt-6">
+                        <h5 class="text-sm font-semibold text-slate-300 mb-3">Synopsis</h5>
+                        <p class="text-slate-400 leading-relaxed">{{ content.description }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Episodes List -->
+                <div class="glass-card rounded-2xl p-6">
+                    <h3 class="text-xl font-bold text-white mb-6 flex items-center">
+                        <svg class="w-6 h-6 mr-3 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                        </svg>
+                        Episodes ({{ content.episodes|length }})
+                    </h3>
+                    
+                    <div class="episode-grid flex gap-4 overflow-x-auto pb-4 scroll-smooth">
+                        {% for ep in content.episodes %}
+                        <div class="flex-shrink-0 w-64">
+                            <div class="episode-card bg-slate-800/50 hover:bg-slate-700/50 rounded-xl overflow-hidden border border-slate-600/30 {% if ep.id == episode.id %}ring-2 ring-red-500{% endif %}">
+                                <div class="aspect-video relative bg-gradient-to-br from-slate-700 to-slate-800">
+                                    <img src="{{ content.thumbnail_url }}" alt="Episode {{ ep.episode_number }}" 
+                                         class="w-full h-full object-cover">
+                                    <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-200">
+                                        {% if ep.id != episode.id %}
+                                        <a href="{{ url_for('content.watch_episode', episode_id=ep.id) }}" 
+                                           class="inline-flex items-center justify-center w-12 h-12 bg-red-500 hover:bg-red-600 rounded-full text-white transition-colors duration-200">
+                                            <svg class="w-6 h-6 ml-1" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M8 5v14l11-7z"/>
+                                            </svg>
+                                        </a>
+                                        {% else %}
+                                        <div class="inline-flex items-center justify-center w-12 h-12 bg-red-500 rounded-full text-white">
+                                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M8 5v14l11-7z"/>
+                                            </svg>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    {% if ep.id == episode.id %}
+                                    <div class="absolute top-2 right-2">
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-500 text-white">
+                                            Now Playing
+                                        </span>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="p-4">
+                                    <h4 class="font-semibold text-white text-sm mb-1">Episode {{ ep.episode_number }}</h4>
+                                    <p class="text-slate-400 text-xs line-clamp-2">{{ ep.title }}</p>
+                                    {% if ep.duration %}
+                                    <p class="text-slate-500 text-xs mt-2">{{ ep.duration }} min</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="xl:col-span-1 space-y-6">
+                
+                <!-- Similar Anime -->
+                {% if similar_anime %}
+                <div class="glass-card rounded-2xl p-6">
+                    <h3 class="text-lg font-bold text-white mb-4 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                        </svg>
+                        Similar Anime
+                    </h3>
+                    <div class="space-y-3 max-h-80 overflow-y-auto custom-scrollbar">
+                        {% for similar_content in similar_anime[:4] %}
+                        <div class="group">
+                            <a href="{{ url_for('content.anime_redirect', content_id=similar_content.id) }}" 
+                               class="flex gap-3 p-3 rounded-xl bg-slate-800/30 hover:bg-slate-700/50 border border-slate-600/20 hover:border-slate-500/40 transition-all duration-200">
+                                <div class="flex-shrink-0 w-16 h-20 rounded-lg overflow-hidden bg-slate-700">
+                                    <img src="{{ similar_content.thumbnail_url }}" alt="{{ similar_content.title }}" 
+                                         class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300">
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <h4 class="font-semibold text-white text-sm mb-1 line-clamp-2 group-hover:text-red-400 transition-colors duration-200">
+                                        {{ similar_content.title }}
+                                    </h4>
+                                    <div class="flex items-center gap-2 text-xs text-slate-400 mb-1">
+                                        <svg class="w-3 h-3 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                        </svg>
+                                        {{ "%.1f"|format(similar_content.rating) }}
+                                        <span class="text-slate-500">•</span>
+                                        <span>{{ similar_content.year }}</span>
+                                    </div>
+                                    <p class="text-xs text-slate-500 line-clamp-2">{{ similar_content.genre }}</p>
+                                </div>
+                            </a>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Trending Now -->
+                {% if trending_anime %}
+                <div class="glass-card rounded-2xl p-6">
+                    <h3 class="text-lg font-bold text-white mb-4 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                        </svg>
+                        Trending Now
+                    </h3>
+                    <div class="space-y-3 max-h-72 overflow-y-auto custom-scrollbar">
+                        {% for trending_content in trending_anime[:3] %}
+                        <div class="group">
+                            <a href="{{ url_for('content.anime_redirect', content_id=trending_content.id) }}" 
+                               class="block p-4 rounded-xl bg-gradient-to-r from-slate-800/40 to-slate-700/40 hover:from-slate-700/60 hover:to-slate-600/60 border border-slate-600/20 hover:border-red-500/40 transition-all duration-200">
+                                <div class="flex gap-3">
+                                    <div class="flex-shrink-0 w-12 h-16 rounded-lg overflow-hidden bg-slate-700">
+                                        <img src="{{ trending_content.thumbnail_url }}" alt="{{ trending_content.title }}" 
+                                             class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300">
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <h4 class="font-bold text-white text-sm mb-1 line-clamp-2 group-hover:text-red-400 transition-colors duration-200">
+                                            {{ trending_content.title }}
+                                        </h4>
+                                        <div class="flex items-center gap-2 text-xs text-slate-400">
+                                            <svg class="w-3 h-3 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                            </svg>
+                                            {{ "%.1f"|format(trending_content.rating) }}
+                                            <span class="text-slate-500">•</span>
+                                            <span>{{ trending_content.year }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Global variables for Professional Video Player
+window.currentEpisodeId = {{ episode.id }};
+window.availableServers = [
+    {% if episode.server_m3u8_url %}
+    { type: 'm3u8', url: '{{ episode.server_m3u8_url|safe }}' },
+    {% endif %}
+    {% if episode.server_embed_url %}
+    { type: 'embed', url: '{{ episode.server_embed_url|safe }}' },
+    {% endif %}
+    {% if episode.iqiyi_play_url %}
+    { type: 'iqiyi', url: '{{ episode.iqiyi_play_url|safe }}' },
+    {% endif %}
+    {% if episode.video_url %}
+    { type: 'direct', url: '{{ episode.video_url|safe }}' },
+    {% endif %}
+];
+
+// Episode subtitle data (to be expanded with real subtitle support)
+window.episodeSubtitles = [
+    // Example subtitle structure for future implementation
+    // { language: 'English', language_code: 'en', subtitle_type: 'srt', url: '/subtitles/episode1_en.srt' },
+    // { language: 'Indonesian', language_code: 'id', subtitle_type: 'vtt', url: '/subtitles/episode1_id.vtt' }
+];
+
+// Watch time restrictions for free users
+window.watchTimeRestrictions = {
+    canWatchFull: {{ can_watch_full|tojson }},
+    maxWatchTime: {{ max_watch_time or 'null' }}
+};
+
+// Legacy variables for backward compatibility
+let player;
+let episodeData = {
+    id: {{ episode.id or 0 }},
+    watchTime: {{ watch_time or 0 }},
+    canWatchFull: {{ can_watch_full|tojson }},
+    maxWatchTime: {{ max_watch_time or 'null' }}
+};
+
+// Server switching functionality
+let currentServer = null;
+let currentServerUrl = null;
+
+function switchServer(serverType, serverUrl) {
+    if (!serverUrl) {
+        showNotification('Server URL not available', 'error');
+        return;
+    }
+    
+    currentServer = serverType;
+    currentServerUrl = serverUrl;
+    
+    // Update button states
+    document.querySelectorAll('.server-btn').forEach(btn => {
+        btn.classList.remove('bg-green-600', 'hover:bg-green-700');
+        btn.classList.add('bg-slate-600', 'hover:bg-slate-700');
+    });
+    
+    const activeBtn = document.getElementById(`server-${serverType}`);
+    if (activeBtn) {
+        activeBtn.classList.remove('bg-slate-600', 'hover:bg-slate-700');
+        activeBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+    }
+    
+    // Hide all containers
+    document.getElementById('embed-container').classList.add('hidden');
+    
+    // Dispose of existing Video.js player if it exists
+    if (player && typeof player.dispose === 'function') {
+        player.dispose();
+        player = null;
+    }
+    
+    switch (serverType) {
+        case 'm3u8':
+            showVideoPlayer(serverUrl, 'application/x-mpegURL');
+            showNotification('Switched to M3U8 Server', 'success');
+            break;
+            
+        case 'direct':
+            showVideoPlayer(serverUrl, 'video/mp4');
+            showNotification('Switched to Direct Video Server', 'success');
+            break;
+            
+        case 'embed':
+            showEmbedPlayer(serverUrl);
+            showNotification('Switched to Embed Server', 'success');
+            break;
+            
+        case 'iqiyi':
+            if (!serverUrl || serverUrl === 'None' || serverUrl === '') {
+                showNotification('IQiyi URL not available for this episode', 'error');
+                return;
+            }
+            
+            // Extract and play M3U8 from iQiyi DASH URL
+            extractAndPlayIqiyiM3U8(serverUrl);
+            showNotification('Extracting M3U8 from iQiyi...', 'info');
+            break;
+            
+        default:
+            showNotification('Unknown server type', 'error');
+            break;
+    }
+}
+
+function showVideoPlayer(url, type = 'video/mp4') {
+    console.log('Initializing video player with:', { url, type });
+    
+    try {
+        // Hide embed container first
+        const embedContainer = document.getElementById('embed-container');
+        if (embedContainer) {
+            embedContainer.classList.add('hidden');
+        }
+        
+        // Show video player container  
+        const videoContainer = document.getElementById('video-container');
+        const videoElement = document.getElementById('video-player');
+        
+        if (!videoContainer || !videoElement) {
+            console.error('Missing elements:', { videoContainer: !!videoContainer, videoElement: !!videoElement });
+            throw new Error('Video player elements not found');
+        }
+        
+        // Video element should always be visible for Video.js
+        videoElement.style.display = 'block';
+        
+        // Check if HLS.js is available
+        console.log('HLS.js availability check:', typeof Hls !== 'undefined');
+        if (typeof Hls === 'undefined') {
+            console.error('HLS.js library not loaded');
+            // Try fallback without throwing error immediately
+            console.log('Attempting fallback without HLS.js...');
+        }
+        
+        // Dispose existing HLS instance if any
+        if (window.currentHls) {
+            window.currentHls.destroy();
+            window.currentHls = null;
+        }
+        
+        // Reset video element
+        videoElement.removeAttribute('src');
+        videoElement.load();
+        
+        // Handle M3U8 streams and data URLs
+        if (type === 'application/x-mpegURL' || url.includes('.m3u8') || url.startsWith('data:application/vnd.apple.mpegurl')) {
+            console.log('Processing M3U8 stream...');
+            
+            let sourceUrl = url;
+            
+            // Handle data URL (base64 encoded M3U8)
+            if (url.startsWith('data:application/vnd.apple.mpegurl')) {
+                console.log('Converting base64 M3U8 to blob URL');
+                try {
+                    const base64Content = url.split(',')[1];
+                    const m3u8Content = atob(base64Content);
+                    console.log('Decoded M3U8 content length:', m3u8Content.length);
+                    console.log('M3U8 content preview:', m3u8Content.substring(0, 200));
+                    
+                    // Create blob with proper MIME type
+                    const blob = new Blob([m3u8Content], { 
+                        type: 'application/vnd.apple.mpegurl' 
+                    });
+                    sourceUrl = URL.createObjectURL(blob);
+                    console.log('Created blob URL:', sourceUrl);
+                } catch (error) {
+                    console.error('Failed to decode base64 M3U8:', error);
+                    // Fallback to demo URL
+                    sourceUrl = 'https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8';
+                    showNotification('Failed to decode M3U8, using demo stream', 'warning');
+                }
+            }
+            
+            if (typeof Hls !== 'undefined' && Hls.isSupported()) {
+                console.log('Using HLS.js for M3U8 streaming');
+                
+                const hls = new Hls({
+                    debug: false,
+                    enableWorker: true,
+                    lowLatencyMode: false,
+                    backBufferLength: 30,
+                    maxBufferLength: 60
+                });
+                
+                hls.loadSource(sourceUrl);
+                hls.attachMedia(videoElement);
+                
+                hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                    console.log('✅ HLS manifest parsed successfully');
+                    showNotification('M3U8 stream ready to play', 'success');
+                });
+                
+                hls.on(Hls.Events.ERROR, function(event, data) {
+                    console.error('❌ HLS error:', data);
+                    if (data.fatal) {
+                        switch (data.type) {
+                            case Hls.ErrorTypes.NETWORK_ERROR:
+                                showNotification('Network error loading stream', 'error');
+                                break;
+                            case Hls.ErrorTypes.MEDIA_ERROR:
+                                showNotification('Media error in stream', 'error');
+                                break;
+                            default:
+                                showNotification('Unknown streaming error', 'error');
+                                break;
+                        }
+                    }
+                });
+                
+                window.currentHls = hls;
+                
+            } else if (videoElement.canPlayType('application/vnd.apple.mpegurl')) {
+                console.log('Using native HLS support for URL:', sourceUrl);
+                videoElement.src = sourceUrl;
+                
+                // Add error event listener
+                videoElement.addEventListener('error', function(e) {
+                    console.error('Video element error:', e);
+                    console.error('Error details:', videoElement.error);
+                    const errorCode = videoElement.error ? videoElement.error.code : 'Unknown';
+                    const errorMessage = videoElement.error ? 
+                        `Media error (Code: ${errorCode})` : 'Unknown playback error';
+                    showNotification('Video playback error: ' + errorMessage, 'error');
+                    
+                    // Auto-fallback for M3U8 blob URLs that fail on mobile
+                    if (sourceUrl.startsWith('blob:') && url.startsWith('data:application/vnd.apple.mpegurl')) {
+                        console.log('Blob M3U8 failed, trying demo fallback');
+                        const fallbackUrl = 'https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8';
+                        setTimeout(() => {
+                            videoElement.src = fallbackUrl;
+                            showNotification('Switched to demo M3U8 stream', 'info');
+                        }, 1000);
+                    }
+                });
+                
+                // Add loadstart event listener
+                videoElement.addEventListener('loadstart', function() {
+                    console.log('Video loading started');
+                });
+                
+                // Add canplay event listener
+                videoElement.addEventListener('canplay', function() {
+                    console.log('Video can start playing');
+                    showNotification('Video ready to play', 'success');
+                });
+                
+                showNotification('Using native HLS support', 'success');
+            } else {
+                console.log('HLS not supported, trying direct playback');
+                videoElement.src = sourceUrl;
+                showNotification('Attempting direct M3U8 playback', 'warning');
+            }
+        } else {
+            // For direct video files (MP4, etc.)
+            console.log('Loading direct video file');
+            videoElement.src = url;
+            showNotification('Direct video loaded', 'success');
+        }
+        
+        // Set up player events for progress tracking
+        if (typeof episodeData !== 'undefined' && episodeData) {
+            setupVideoEvents(videoElement, episodeData);
+        }
+        
+        console.log('✅ Video player initialized successfully');
+        
+    } catch (error) {
+        console.error('❌ Failed to initialize video player:', error);
+        console.error('Error details:', error.stack);
+        showNotification('Video player error: ' + error.message, 'error');
+        
+        // Show detailed error info
+        if (videoContainer) {
+            videoContainer.innerHTML = `
+                <div class="flex items-center justify-center h-64 bg-gray-800 text-white">
+                    <div class="text-center p-4">
+                        <h3 class="text-lg font-semibold mb-2">Video Player Error</h3>
+                        <p class="text-gray-300 mb-2">${error.message}</p>
+                        <button onclick="location.reload()" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                            Retry
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+    }
+}
+
+function showEmbedPlayer(url) {
+    // Hide video player
+    const videoElement = document.getElementById('video-player');
+    if (videoElement) {
+        videoElement.classList.add('hidden');
+    }
+    
+    // Show embed container
+    const embedContainer = document.getElementById('embed-container');
+    const embedPlayer = document.getElementById('embed-player');
+    
+    if (embedPlayer) {
+        embedPlayer.src = url;
+    }
+    if (embedContainer) {
+        embedContainer.classList.remove('hidden');
+    }
+    
+    showNotification('Embed player loaded', 'success');
+}
+
+function extractAndPlayIqiyiM3U8(dashUrl) {
+    console.log('Extracting M3U8 from iQiyi DASH URL:', dashUrl);
+    
+    // Extract M3U8 from iQiyi DASH URL
+    fetch('/api/extract-iqiyi-m3u8', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            iqiyi_play_url: dashUrl
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.m3u8_content) {
+            console.log('✅ M3U8 extracted successfully, content length:', data.m3u8_content.length);
+            
+            // Create blob URL from M3U8 content
+            const blob = new Blob([data.m3u8_content], { type: 'application/vnd.apple.mpegurl' });
+            const m3u8Url = URL.createObjectURL(blob);
+            
+            console.log('Created M3U8 blob URL:', m3u8Url);
+            showVideoPlayer(m3u8Url, 'application/x-mpegURL');
+            showNotification('M3U8 extracted and loaded successfully!', 'success');
+        } else {
+            console.error('❌ Failed to extract M3U8:', data.error);
+            // Show error instead of iframe fallback
+            showNotification('❌ Failed to extract M3U8 from iQiyi: ' + data.error, 'error');
+            
+            // Show detailed error message in video container
+            const videoContainer = document.getElementById('video-container');
+            if (videoContainer) {
+                videoContainer.innerHTML = `
+                    <div class="flex items-center justify-center h-64 bg-gray-800 text-white rounded-lg">
+                        <div class="text-center p-6 max-w-md">
+                            <h3 class="text-xl font-semibold mb-3">🚫 Server 3 (iQiyi) M3U8 Extraction Failed</h3>
+                            <div class="text-gray-300 mb-4 space-y-2">
+                                <p class="text-sm">Could not extract M3U8 stream from iQiyi URL</p>
+                                <p class="text-xs text-gray-400">Error: ${data.error || 'Unknown extraction error'}</p>
+                            </div>
+                            <div class="bg-gray-700 p-3 rounded mb-4">
+                                <p class="text-xs text-gray-300 mb-2">Troubleshooting:</p>
+                                <ul class="text-xs text-gray-400 text-left space-y-1">
+                                    <li>• iQiyi requires valid authentication/signature</li>
+                                    <li>• DASH URLs expire after a few minutes</li>
+                                    <li>• Try other servers (M3U8, Embed) instead</li>
+                                    <li>• Admin needs to refresh episode URLs</li>
+                                </ul>
+                                <p class="text-xs text-yellow-400 mt-2">
+                                    💡 Server 3 successfully extracts episode ID but needs fresh DASH URL
+                                </p>
+                            </div>
+                            <div class="space-y-2">
+                                <button onclick="location.reload()" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm">
+                                    Try Again
+                                </button>
+                                <button onclick="switchServer('m3u8')" class="ml-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
+                                    Use Server 1 (M3U8)
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+    })
+    .catch(error => {
+        console.error('❌ API call failed:', error);
+        // Show error instead of iframe fallback
+        showNotification('❌ Network error while extracting M3U8', 'error');
+        
+        // Show error message in video container
+        const videoContainer = document.getElementById('video-container');
+        if (videoContainer) {
+            videoContainer.innerHTML = `
+                <div class="flex items-center justify-center h-64 bg-gray-800 text-white rounded-lg">
+                    <div class="text-center p-4">
+                        <h3 class="text-lg font-semibold mb-2">🌐 Network Error</h3>
+                        <p class="text-gray-300 mb-4">Could not connect to extraction service</p>
+                        <p class="text-sm text-gray-400">${error.message || 'Connection failed'}</p>
+                        <button onclick="location.reload()" class="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
+                            Try Again
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+    });
+}
+
+
+
+
+
+
+function loadSubtitles() {
+    // Subtitle functionality placeholder
+    console.log('Subtitle loading ready');
+}
+
+function setupVideoEvents(videoElement, episodeData) {
+    // Setup progress tracking for HTML5 video
+    videoElement.addEventListener('timeupdate', function() {
+        const currentTime = videoElement.currentTime;
+        const duration = videoElement.duration;
+        
+        if (duration > 0) {
+            // Update progress every 30 seconds
+            if (Math.floor(currentTime) % 30 === 0) {
+                updateWatchProgress(episodeData.id, currentTime, duration);
+            }
+        }
+    });
+    
+    // Resume from last position
+    if (episodeData.watch_progress && episodeData.watch_progress > 10) {
+        videoElement.addEventListener('loadedmetadata', function() {
+            videoElement.currentTime = episodeData.watch_progress;
+        }, { once: true });
+    }
+}
+
+function updateWatchProgress(episodeId, currentTime, duration) {
+    fetch('/save-watch-progress', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            episode_id: episodeId,
+            watch_time: Math.floor(currentTime * 1000)
+        })
+    }).catch(error => {
+        console.log('Failed to save progress:', error);
+    });
+}
+
+function setupPlayerEvents(player, data) {
+    // Resume from last watched position
+    if (data.watchTime > 0) {
+        player.ready(() => {
+            player.currentTime(data.watchTime / 1000);
+            showNotification('Resumed from where you left off', 'info');
+        });
+    }
+    
+    // Set up time restrictions for free users
+    if (!data.canWatchFull && data.maxWatchTime) {
+        setupTimeRestrictions(player, data.maxWatchTime);
+    }
+    
+    // Track watch progress
+    let lastSavedTime = 0;
+    player.on('timeupdate', function() {
+        const currentTime = Math.floor(player.currentTime());
+        
+        // Save progress every 10 seconds
+        if (currentTime - lastSavedTime >= 10) {
+            saveWatchProgress(data.id, currentTime * 1000);
+            lastSavedTime = currentTime;
+        }
+    });
+}
+
+function setupTimeRestrictions(player, maxTimeInMinutes) {
+    const maxTimeInSeconds = maxTimeInMinutes * 60;
+    
+    player.on('timeupdate', function() {
+        const currentTime = player.currentTime();
+        if (currentTime >= maxTimeInSeconds) {
+            player.pause();
+            document.getElementById('upgrade-overlay').classList.remove('hidden');
+        }
+    });
+}
+
+function saveWatchProgress(episodeId, watchTime) {
+    fetch('/save-watch-progress', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            episode_id: episodeId,
+            watch_time: watchTime
+        })
+    }).catch(error => {
+        console.error('Error saving watch progress:', error);
+    });
+}
+
+function restartVideo() {
+    if (player) {
+        player.currentTime(0);
+        player.play();
+    }
+    document.getElementById('upgrade-overlay').classList.add('hidden');
+}
+
+function shareEpisode() {
+    if (navigator.share) {
+        navigator.share({
+            title: '{{ episode.title }} - {{ content.title }}',
+            text: 'Watch {{ episode.title }} on AniFlix',
+            url: window.location.href
+        });
+    } else {
+        navigator.clipboard.writeText(window.location.href).then(() => {
+            showNotification('Link copied to clipboard!', 'success');
+        });
+    }
+}
+
+function toggleWatchlist(animeId) {
+    showNotification('Watchlist feature coming soon!', 'info');
+}
+
+function rateAnime(animeId) {
+    const rating = prompt('Rate this anime (1-10):');
+    if (rating && rating >= 1 && rating <= 10) {
+        showNotification('Thank you for your rating!', 'success');
+    } else if (rating !== null) {
+        showNotification('Please enter a valid rating between 1 and 10', 'error');
+    }
+}
+
+// Initialize app with Professional Video Player
+function initializeApp() {
+    console.log('🎬 Initializing Professional Video Player App...');
+    
+    console.log('Available servers:', window.availableServers);
+    console.log('Episode subtitles:', window.episodeSubtitles);
+    console.log('Watch restrictions:', window.watchTimeRestrictions);
+    
+    // Professional player will auto-initialize via DOMContentLoaded
+    // Legacy initialization is handled by the professional player class
+}
+
+
+
+function showNotification(message, type = 'info') {
+    // Remove existing notifications
+    const existingNotifications = document.querySelectorAll('.notification-toast');
+    existingNotifications.forEach(notification => notification.remove());
+    
+    const notification = document.createElement('div');
+    notification.className = `notification-toast fixed top-20 right-4 z-50 max-w-sm transform translate-x-full transition-all duration-500`;
+    
+    const getNotificationStyle = (type) => {
+        switch(type) {
+            case 'success':
+                return 'bg-gradient-to-r from-green-500 to-emerald-600 border-green-400';
+            case 'error':
+                return 'bg-gradient-to-r from-red-500 to-rose-600 border-red-400';
+            case 'warning':
+                return 'bg-gradient-to-r from-yellow-500 to-amber-600 border-yellow-400';
+            default:
+                return 'bg-gradient-to-r from-blue-500 to-indigo-600 border-blue-400';
+        }
+    };
+    
+    const getIcon = (type) => {
+        switch(type) {
+            case 'success':
+                return '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+            case 'error':
+                return '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
+            case 'warning':
+                return '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L5.314 18.5c-.77.833.192 2.5 1.732 2.5z"></path></svg>';
+            default:
+                return '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+        }
+    };
+    
+    notification.innerHTML = `
+        <div class="p-4 rounded-xl shadow-2xl backdrop-blur-sm ${getNotificationStyle(type)} border border-opacity-50">
+            <div class="flex items-start">
+                <div class="flex-shrink-0 text-white">
+                    ${getIcon(type)}
+                </div>
+                <div class="ml-3 w-0 flex-1 pt-0.5">
+                    <p class="text-sm font-semibold text-white drop-shadow-lg">${message}</p>
+                </div>
+                <div class="ml-4 flex-shrink-0 flex">
+                    <button class="bg-white/20 hover:bg-white/30 rounded-lg p-1 inline-flex text-white/90 hover:text-white transition-all duration-200 focus:outline-none" onclick="this.parentElement.parentElement.parentElement.parentElement.remove()">
+                        <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Professional slide-in animation
+    setTimeout(() => {
+        notification.classList.remove('translate-x-full');
+        notification.classList.add('animate-pulse');
+    }, 100);
+    
+    // Remove pulse after animation
+    setTimeout(() => {
+        notification.classList.remove('animate-pulse');
+    }, 600);
+    
+    // Auto remove after 4 seconds
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.classList.add('translate-x-full', 'opacity-0', 'scale-95');
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.remove();
+                }
+            }, 500);
+        }
+    }, 4000);
+}
+
+// Remove duplicate - will use the one at the end
+
+// Enhanced subtitle support with URL handling
+function setupSubtitleSupport(videoPlayer) {
+    console.log('🎬 Setting up professional subtitle support...');
+    
+    // Add subtitle tracks from episode data
+    if (window.episodeSubtitles && window.episodeSubtitles.length > 0) {
+        window.episodeSubtitles.forEach(subtitle => {
+            addSubtitleTrack(videoPlayer, subtitle);
+        });
+    }
+}
+
+function addSubtitleTrack(videoPlayer, subtitle) {
+    if (!videoPlayer || !subtitle.url) return;
+    
+    try {
+        const track = videoPlayer.addRemoteTextTrack({
+            kind: 'subtitles',
+            src: subtitle.url,
+            srclang: subtitle.language_code || 'en',
+            label: subtitle.language || 'Unknown',
+            default: subtitle.default || false
+        }, false);
+        
+        console.log(`✅ Added subtitle track: ${subtitle.language} (${subtitle.url})`);
+        return track;
+    } catch (error) {
+        console.error('❌ Failed to add subtitle track:', error);
+        showNotification(`Failed to load subtitle: ${subtitle.language}`, 'error');
+    }
+}
+
+function changeSubtitle(subtitleUrl, language = 'Unknown') {
+    if (!player) {
+        showNotification('Video player not ready', 'error');
+        return;
+    }
+    
+    // Remove existing subtitle tracks
+    const tracks = player.textTracks();
+    for (let i = tracks.length - 1; i >= 0; i--) {
+        const track = tracks[i];
+        if (track.kind === 'subtitles' || track.kind === 'captions') {
+            track.mode = 'disabled';
+            player.removeRemoteTextTrack(track);
+        }
+    }
+    
+    if (!subtitleUrl || subtitleUrl === 'off') {
+        showNotification('Subtitles disabled', 'info');
+        return;
+    }
+    
+    // Add new subtitle track
+    try {
+        const languageCode = language.toLowerCase().substring(0, 2);
+        const track = player.addRemoteTextTrack({
+            kind: 'subtitles',
+            src: subtitleUrl,
+            srclang: languageCode,
+            label: language,
+            default: true
+        }, false);
+        
+        // Enable the track
+        setTimeout(() => {
+            const textTracks = player.textTracks();
+            for (let i = 0; i < textTracks.length; i++) {
+                if (textTracks[i].kind === 'subtitles') {
+                    textTracks[i].mode = 'showing';
+                    break;
+                }
+            }
+        }, 100);
+        
+        showNotification(`Subtitles loaded: ${language}`, 'success');
+        console.log(`✅ Subtitle track loaded: ${language} from ${subtitleUrl}`);
+        
+    } catch (error) {
+        console.error('❌ Failed to load subtitle:', error);
+        showNotification(`Failed to load subtitle: ${language}`, 'error');
+    }
+}
+
+// iQiyi Play URL M3U8 Extraction and Streaming
+async function extractAndPlayIqiyi(iqiyiPlayUrl) {
+    const iqiyiBtn = document.getElementById('server-iqiyi');
+    if (iqiyiBtn) {
+        iqiyiBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Extracting...';
+        iqiyiBtn.disabled = true;
+    }
+    
+    try {
+        const response = await fetch('/admin/api/extract-iqiyi-m3u8', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                iqiyi_play_url: iqiyiPlayUrl
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success && result.m3u8_content) {
+            // Create blob URL for M3U8 content
+            const blob = new Blob([result.m3u8_content], { 
+                type: 'application/vnd.apple.mpegurl' 
+            });
+            const m3u8Url = URL.createObjectURL(blob);
+            
+            // Play the extracted M3U8
+            await showVideoPlayer(m3u8Url, 'application/x-mpegURL');
+            showNotification(`iQiyi streaming ready (${result.method})`, 'success');
+            
+            console.log('iQiyi M3U8 extracted successfully:', {
+                method: result.method,
+                contentLength: result.m3u8_content.length,
+                blobUrl: m3u8Url,
+                episodeInfo: result.episode_info
+            });
+            
+        } else {
+            console.error('iQiyi extraction failed:', result.error);
+            showNotification(`iQiyi extraction failed: ${result.error}`, 'error');
+            
+            // Fallback to embed if available  
+            const embedUrl = '{{ episode.server_embed_url if episode.server_embed_url else "" }}';
+            if (embedUrl) {
+                showNotification('Falling back to embed player...', 'info');
+                showEmbedPlayer(embedUrl);
+            }
+        }
+    } catch (error) {
+        console.error('iQiyi extraction error:', error);
+        showNotification(`Network error: ${error.message}`, 'error');
+        
+        // Fallback to embed if available
+        const embedUrl = '{{ episode.server_embed_url if episode.server_embed_url else "" }}';
+        if (embedUrl) {
+            showNotification('Falling back to embed player...', 'info');
+            showEmbedPlayer(embedUrl);
+        }
+    } finally {
+        // Restore button
+        if (iqiyiBtn) {
+            iqiyiBtn.innerHTML = '<i class="fas fa-tachometer-alt mr-2"></i>Server 3 (iQiyi)';
+            iqiyiBtn.disabled = false;
+        }
+    }
+}
+
+// Initialize HTML5 Video Player with HLS.js
+function initializeVideoPlayer() {
+    console.log('🎬 Initializing Professional HTML5 Video Player...');
+    
+    player = document.getElementById('player');
+    
+    if (player) {
+        console.log('✅ HTML5 video player found and ready');
+        
+        // Set up video events
+        setupVideoEvents();
+        
+        // Auto-start with first available server
+        if (window.availableServers && window.availableServers.length > 0) {
+            const firstServer = window.availableServers[0];
+            setTimeout(() => {
+                switchServer(firstServer.type, firstServer.url);
+            }, 1000);
+        }
+    } else {
+        console.error('❌ Video player element not found');
+    }
+    
+    return player;
+}
+
+// Setup video player events
+function setupVideoEvents() {
+    if (!player) return;
+    
+    player.addEventListener('loadstart', function() {
+        console.log('Video loading started');
+    });
+    
+    player.addEventListener('canplay', function() {
+        console.log('Video can start playing');
+    });
+    
+    player.addEventListener('error', function(e) {
+        console.error('Video error:', e);
+        showNotification('Video playback error', 'error');
+    });
+    
+    // Track watch progress
+    let lastSavedTime = 0;
+    player.addEventListener('timeupdate', function() {
+        const currentTime = Math.floor(player.currentTime);
+        
+        // Save progress every 10 seconds
+        if (currentTime - lastSavedTime >= 10) {
+            saveWatchProgress(window.episodeData?.id, currentTime * 1000);
+            lastSavedTime = currentTime;
+        }
+    });
+}
+
+// Setup subtitle selector functionality
+function setupSubtitleSelector() {
+    const subtitleSelector = document.getElementById('subtitle-selector');
+    if (subtitleSelector) {
+        subtitleSelector.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            const subtitleUrl = selectedOption.getAttribute('data-url');
+            const language = selectedOption.getAttribute('data-lang') || selectedOption.text;
+            
+            if (this.value === 'off') {
+                changeSubtitle(null);
+            } else if (subtitleUrl) {
+                changeSubtitle(subtitleUrl, language);
+            }
+        });
+        
+        console.log('✅ Subtitle selector initialized');
+    }
+}
+
+// Wait for page to load
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🎬 Page loaded, initializing video player...');
+    
+    setTimeout(() => {
+        initializeVideoPlayer();
+        initializeApp();
+    }, 500);
+});
+</script>
+{% endblock %}

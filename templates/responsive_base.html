@@ -1,0 +1,1609 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ system_settings.site_title or 'AniFlix' }} - Premium Anime & Movie Streaming{% endblock %}</title>
+    <meta name="description" content="{{ system_settings.site_description or 'Your premium anime and movie streaming platform' }}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/search.css') }}">
+    
+    <!-- Plyr.io CSS for video player -->
+    <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #0f0f1a;
+            color: #ffffff;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+        .hero-gradient {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        }
+
+        .card-hover:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+        }
+
+        .genre-tag {
+            transition: all 0.3s ease;
+        }
+
+        .genre-tag:hover {
+            background-color: #e94560;
+            color: white;
+        }
+
+        .video-container {
+            position: relative;
+            padding-bottom: 56.25%;
+            height: 0;
+            overflow: hidden;
+        }
+
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Trailer Modal Styles */
+        .trailer-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .trailer-modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .trailer-modal-content {
+            position: relative;
+            width: 90%;
+            max-width: 800px;
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            transform: scale(0.7);
+            transition: transform 0.3s ease;
+        }
+
+        .trailer-modal.active .trailer-modal-content {
+            transform: scale(1);
+        }
+
+        .trailer-close-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s ease;
+        }
+
+        .trailer-close-btn:hover {
+            background: rgba(255, 0, 0, 0.7);
+        }
+
+        .nav-link {
+            position: relative;
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -2px;
+            left: 0;
+            background-color: #e94560;
+            transition: width 0.3s ease;
+        }
+
+        .nav-link:hover::after {
+            width: 100%;
+        }
+
+        /* Mobile menu styles - clean and simple */
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1a1a2e;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #e94560;
+            border-radius: 4px;
+        }
+
+        .carousel {
+            scroll-snap-type: x mandatory;
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* Admin Page Scroll Fix */
+        .admin-content {
+            max-height: none !important;
+            overflow-y: visible !important;
+            height: auto !important;
+        }
+
+        .admin-table-container {
+            max-height: none !important;
+            overflow-y: visible !important;
+            height: auto !important;
+        }
+
+        /* Ensure body can scroll normally */
+        html, body {
+            height: auto !important;
+            overflow-y: auto !important;
+            scroll-behavior: smooth;
+        }
+
+        /* Admin table scrolling */
+        .admin-table-scroll {
+            max-height: 384px; /* max-h-96 equivalent */
+            overflow-y: auto;
+            overflow-x: auto;
+        }
+
+        .admin-table-scroll::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        .admin-table-scroll::-webkit-scrollbar-track {
+            background: #374151;
+            border-radius: 3px;
+        }
+
+        .admin-table-scroll::-webkit-scrollbar-thumb {
+            background: #e94560;
+            border-radius: 3px;
+        }
+
+        .admin-table-scroll::-webkit-scrollbar-thumb:hover {
+            background: #dc2626;
+        }
+
+        /* Horizontal scrolling without scrollbar */
+        .scrollbar-hide {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+        
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;  /* Chrome, Safari, Opera */
+        }
+
+        /* Enhanced Admin Animations */
+        .admin-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateY(0);
+        }
+
+        .admin-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(233, 69, 96, 0.2);
+        }
+
+        .admin-button {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .admin-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .admin-button:hover::before {
+            left: 100%;
+        }
+
+        .search-input {
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .search-input:focus {
+            transform: scale(1.02);
+            box-shadow: 0 0 0 3px rgba(233, 69, 96, 0.1);
+        }
+
+        .action-button {
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform: scale(1);
+        }
+
+        .action-button:hover {
+            transform: scale(1.1);
+        }
+
+        .action-button:active {
+            transform: scale(0.95);
+        }
+
+        .table-row {
+            transition: all 0.2s ease;
+            border-left: 3px solid transparent;
+        }
+
+        .table-row:hover {
+            background-color: rgba(55, 65, 81, 0.3);
+            border-left-color: #e94560;
+            transform: translateX(2px);
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .slide-in {
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(-10px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .pulse-glow {
+            animation: pulseGlow 2s infinite;
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 5px rgba(233, 69, 96, 0.3); }
+            50% { box-shadow: 0 0 20px rgba(233, 69, 96, 0.6); }
+        }
+
+        .loading-spinner {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .carousel-item {
+            scroll-snap-align: start;
+            flex-shrink: 0;
+        }
+
+        /* Profile Page Styles */
+        .profile-avatar {
+            transition: all 0.3s ease;
+        }
+        
+        .profile-avatar:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(239, 68, 68, 0.3);
+        }
+        
+        .profile-card {
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+        
+        .profile-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        .profile-stat {
+            transition: all 0.2s ease;
+        }
+        
+        .profile-stat:hover {
+            background-color: rgba(239, 68, 68, 0.1);
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+        
+        /* Edit Profile Form Styles */
+        .form-input {
+            transition: all 0.3s ease;
+        }
+        
+        .form-input:focus {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(239, 68, 68, 0.15);
+        }
+        
+        .form-section {
+            transition: all 0.3s ease;
+        }
+        
+        .form-section:hover {
+            transform: translateY(-2px);
+        }
+        
+        /* Enhanced Dropdown Menu */
+        .dropdown-menu {
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(75, 85, 99, 0.3);
+        }
+        
+        .dropdown-item {
+            transition: all 0.15s ease;
+        }
+        
+        .dropdown-item:hover {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(239, 68, 68, 0.05) 100%);
+            transform: translateX(5px);
+        }
+        
+        /* Enhanced Professional Notification Styles */
+        .notification-toast {
+            animation: slideInRightProfessional 0.5s cubic-bezier(0.23, 1, 0.320, 1) forwards;
+            backdrop-filter: blur(16px);
+            box-shadow: 
+                0 20px 25px -5px rgba(0, 0, 0, 0.1),
+                0 10px 10px -5px rgba(0, 0, 0, 0.04),
+                0 0 0 1px rgba(255, 255, 255, 0.05),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+        
+        .notification-toast:hover {
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 
+                0 25px 50px -12px rgba(0, 0, 0, 0.25),
+                0 0 0 1px rgba(255, 255, 255, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.15);
+        }
+        
+        @keyframes slideInRightProfessional {
+            0% {
+                transform: translateX(100%) scale(0.9);
+                opacity: 0;
+            }
+            50% {
+                transform: translateX(-5%) scale(1.02);
+                opacity: 0.8;
+            }
+            100% {
+                transform: translateX(0) scale(1);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes slideOutRightProfessional {
+            0% {
+                transform: translateX(0) scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: translateX(100%) scale(0.9);
+                opacity: 0;
+            }
+        }
+        
+        .notification-removing {
+            animation: slideOutRightProfessional 0.5s ease-in-out forwards;
+        }
+        
+        /* Logo debug styles */
+        [data-debug="logo-image"] {
+            border: 2px solid rgba(255, 0, 0, 0.5) !important;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.8) !important;
+        }
+
+        /* Mobile Search Results Positioning */
+        #mobile-search-results {
+            background: rgba(31, 41, 55, 0.98);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(75, 85, 99, 0.6);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            animation: slideDown 0.2s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Mobile search container constraints */
+        @media (max-width: 640px) {
+            #mobile-search-container {
+                max-width: calc(100vw - 180px); /* Account for VIP button and user icon */
+            }
+            
+            #mobile-search-input {
+                font-size: 14px;
+                padding: 8px 12px 8px 28px;
+            }
+        }
+
+        /* Search result items styling */
+        .search-result-item {
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(75, 85, 99, 0.3);
+            transition: background-color 0.2s ease;
+        }
+
+        .search-result-item:hover,
+        .search-result-item.active {
+            background-color: rgba(239, 68, 68, 0.1);
+        }
+
+        .search-result-item:last-child {
+            border-bottom: none;
+        }
+
+        /* Prevent body scroll when search results are open on mobile */
+        .search-results-open {
+            overflow: hidden;
+        }
+
+        /* Search input focus styles */
+        #mobile-search-input:focus {
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
+        }
+
+        /* Scroll-responsive navbar styles */
+        .navbar-scroll-hidden {
+            transform: translateY(-100%);
+            transition: transform 0.3s ease-in-out;
+        }
+
+        .navbar-scroll-visible {
+            transform: translateY(0);
+            transition: transform 0.3s ease-in-out;
+        }
+
+        /* Horizontal Navigation Bar akan disembunyikan saat scroll */
+        .horizontal-nav {
+            transition: transform 0.3s ease-in-out;
+            position: relative;
+            z-index: 20;
+        }
+
+        .horizontal-nav.hidden-on-scroll {
+            transform: translateY(-100%);
+            opacity: 0;
+            visibility: hidden;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Header Design Sesuai Permintaan -->
+    <header class="fixed w-full z-30 shadow-lg" style="background: linear-gradient(to bottom, rgba(17, 24, 39, 1) 0%, rgba(17, 24, 39, 1) 70%, transparent 100%);">
+        <!-- App Header -->
+        <div class="bg-gray-900 border-b border-gray-700">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center justify-between h-16">
+                    <!-- Logo -->
+                    <div class="flex-shrink-0">
+                        <a href="{{ url_for('index') }}" class="flex items-center" id="main-nav-logo">
+                            {% if system_settings.site_logo_url %}
+                                <img src="{{ system_settings.site_logo_url }}" 
+                                     alt="{{ system_settings.site_logo_alt or 'AniFlix' }}" 
+                                     class="h-10 w-auto"
+                                     onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';"
+                                     id="nav-logo-image">
+                                <span class="text-2xl font-bold" style="display: none;" id="nav-logo-text">
+                                    <span class="text-red-500">Ani</span><span class="text-white">Flix</span>
+                                </span>
+                            {% else %}
+                                <span class="text-2xl font-bold" id="nav-logo-text">
+                                    <span class="text-red-500">Ani</span><span class="text-white">Flix</span>
+                                </span>
+                            {% endif %}
+                        </a>
+                    </div>
+
+                    <!-- Search Bar + VIP Button + User Icon Container -->
+                    <div class="flex items-center space-x-1">
+                        <!-- Search Bar - Desktop -->
+                        <div class="hidden md:block">
+                            <div id="search-container" class="relative">
+                                <input type="text" id="search-input" placeholder="Cari anime atau film..." 
+                                    class="bg-gray-800 text-white px-3 py-2 pl-8 pr-3 rounded-full border border-gray-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all text-sm"
+                                    style="width: 200px;"
+                                    autocomplete="off"
+                                    spellcheck="false">
+                                <div class="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-400">
+                                    <i class="fas fa-search text-xs"></i>
+                                </div>
+                                <!-- Search Results Container for Desktop -->
+                                <div id="search-results" class="absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-lg z-[60] max-h-80 overflow-y-auto hidden"></div>
+                            </div>
+                        </div>
+
+                        <!-- Search Bar - Mobile (Responsive) -->
+                        <div class="flex-1 mx-2 sm:mx-4 md:hidden">
+                            <div id="mobile-search-container" class="relative">
+                                <input type="text" id="mobile-search-input" placeholder="Cari anime atau film..." 
+                                    class="w-full bg-gray-800 text-white px-3 py-2 pl-8 pr-4 rounded-full border border-gray-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all text-sm"
+                                    autocomplete="off"
+                                    spellcheck="false">
+                                <div class="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-400">
+                                    <i class="fas fa-search text-xs"></i>
+                                </div>
+                                <!-- Search Results Container for Mobile with proper positioning -->
+                                <div id="mobile-search-results" class="fixed top-32 left-4 right-4 rounded-lg shadow-2xl z-[60] max-h-60 overflow-y-auto hidden"></div>
+                            </div>
+                        </div>
+                        <!-- VIP Button -->
+                        {% if not current_user.is_authenticated or not current_user.is_vip() %}
+                        <a href="{{ url_for('subscription.subscription_page') }}" 
+                           class="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white px-6 py-2.5 rounded-full font-bold text-sm transition-all duration-200 flex items-center shadow-lg">
+                            <i class="fas fa-crown mr-2"></i>
+                            <span class="hidden sm:inline">Go VIP</span>
+                            <span class="sm:hidden">VIP</span>
+                        </a>
+                        {% endif %}
+
+                        {% if current_user.is_authenticated %}
+                        <!-- Notification Bell -->
+                        <div id="notification-bell-container" class="relative">
+                            <button id="notification-bell" 
+                                    class="p-2 text-gray-300 hover:text-white transition-colors rounded-lg">
+                                <i class="fas fa-bell text-xl"></i>
+                                <span id="notification-badge" 
+                                      class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center hidden">0</span>
+                            </button>
+                        </div>
+
+                        <!-- User Icon untuk Login -->
+                        <div class="relative">
+                            <button class="flex items-center p-2 rounded-full hover:bg-gray-800 transition-colors" id="user-menu-button">
+                                <div class="h-10 w-10 rounded-full bg-red-600 flex items-center justify-center border-2 border-gray-600">
+                                    <span class="text-lg font-medium text-white">{{ current_user.username[0].upper() }}</span>
+                                </div>
+                            </button>
+                            <div class="hidden absolute right-0 mt-2 w-56 bg-gray-800 rounded-xl shadow-2xl border border-gray-700 py-2 dropdown-menu z-[100]" id="user-menu">
+                                <div class="px-4 py-3 border-b border-gray-700">
+                                    <p class="text-sm font-medium text-white">{{ current_user.username }}</p>
+                                    <p class="text-xs text-gray-400 truncate">{{ current_user.email }}</p>
+                                    {% if current_user.is_vip() %}
+                                    <span class="inline-block mt-1 px-2 py-1 text-xs bg-yellow-500 text-black rounded-full font-medium">
+                                        <i class="fas fa-crown mr-1"></i>VIP
+                                    </span>
+                                    {% endif %}
+                                </div>
+                                <div class="py-1">
+                                    <a href="{{ url_for('profile') }}" class="flex items-center px-4 py-2 text-sm text-gray-200 hover:bg-gray-700 hover:text-white dropdown-item">
+                                        <i class="fas fa-user-circle mr-3 text-red-400"></i>Profile
+                                    </a>
+                                    <a href="{{ url_for('dashboard') }}" class="flex items-center px-4 py-2 text-sm text-gray-200 hover:bg-gray-700 hover:text-white dropdown-item">
+                                        <i class="fas fa-tachometer-alt mr-3 text-blue-400"></i>Dashboard
+                                    </a>
+                                    <a href="{{ url_for('subscription.subscription_page') }}" class="flex items-center px-4 py-2 text-sm text-gray-200 hover:bg-gray-700 hover:text-white dropdown-item">
+                                        <i class="fas fa-crown mr-3 text-yellow-400"></i>Subscription
+                                    </a>
+                                    {% if current_user.is_admin() %}
+                                    <a href="{{ url_for('admin.admin_dashboard') }}" class="flex items-center px-4 py-2 text-sm text-gray-200 hover:bg-gray-700 hover:text-white dropdown-item">
+                                        <i class="fas fa-cog mr-3 text-purple-400"></i>Admin Panel
+                                    </a>
+                                    <a href="{{ url_for('admin.system_settings') }}" class="flex items-center px-4 py-2 text-sm text-gray-200 hover:bg-gray-700 hover:text-white dropdown-item">
+                                        <i class="fas fa-server mr-3 text-orange-400"></i>System Settings
+                                    </a>
+                                    {% endif %}
+                                </div>
+                                <div class="border-t border-gray-700 py-1">
+                                    <a href="{{ url_for('auth.logout') }}" class="flex items-center px-4 py-2 text-sm text-red-300 hover:bg-red-600 hover:text-white dropdown-item">
+                                        <i class="fas fa-sign-out-alt mr-3"></i>Logout
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <!-- Icon User untuk Login -->
+                        <button data-login class="flex items-center p-2 rounded-full hover:bg-gray-800 transition-colors">
+                            <div class="h-10 w-10 rounded-full bg-red-600 flex items-center justify-center border-2 border-gray-600">
+                                <i class="fas fa-user text-lg text-white"></i>
+                            </div>
+                        </button>
+                        {% endif %}
+
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Horizontal Navigation Bar -->
+        <nav id="horizontal-navbar" class="horizontal-nav bg-transparent border-b border-gray-800 relative z-10" style="background: transparent !important;">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center justify-between h-14">
+                    <!-- Navigation Links dengan horizontal scroll -->
+                    <div class="hidden md:flex items-center flex-1 overflow-x-auto scrollbar-hide">
+                        <div class="flex items-center space-x-8 min-w-max px-2">
+                            <a href="{{ url_for('index') }}" class="{% if request.endpoint == 'index' %}text-red-500 border-b-2 border-red-500{% else %}text-gray-300 hover:text-white{% endif %} px-4 py-4 text-sm font-medium transition-all duration-200 whitespace-nowrap">
+                                Home
+                            </a>
+                            <a href="{{ url_for('content.anime_list') }}" class="{% if request.endpoint == 'content.anime_list' %}text-red-500 border-b-2 border-red-500{% else %}text-gray-300 hover:text-white{% endif %} px-4 py-4 text-sm font-medium transition-all duration-200 whitespace-nowrap">
+                                Anime
+                            </a>
+                            <a href="{{ url_for('content.donghua_list') }}" class="{% if request.endpoint == 'content.donghua_list' %}text-red-500 border-b-2 border-red-500{% else %}text-gray-300 hover:text-white{% endif %} px-4 py-4 text-sm font-medium transition-all duration-200 whitespace-nowrap">
+                                Donghua
+                            </a>
+                            <a href="{{ url_for('content.movies_list') }}" class="{% if request.endpoint == 'content.movies_list' %}text-red-500 border-b-2 border-red-500{% else %}text-gray-300 hover:text-white{% endif %} px-4 py-4 text-sm font-medium transition-all duration-200 whitespace-nowrap">
+                                Movies
+                            </a>
+                            <a href="{{ url_for('content.genres') }}" class="{% if request.endpoint == 'content.genres' %}text-red-500 border-b-2 border-red-500{% else %}text-gray-300 hover:text-white{% endif %} px-4 py-4 text-sm font-medium transition-all duration-200 whitespace-nowrap">
+                                Genre
+                            </a>
+                        </div>
+                        <!-- Icon Menu -->
+                        <div class="flex-shrink-0 ml-4">
+                            <button id="desktop-menu-toggle" class="text-gray-300 hover:text-white px-4 py-4 text-sm font-medium transition-all duration-200 flex items-center" title="Menu">
+                                <i class="fas fa-ellipsis-h text-xl"></i>
+                            </button>
+                        </div>
+                    </div>
+
+
+
+                    <!-- Mobile Navigation dengan horizontal scroll -->
+                    <div class="md:hidden flex items-center w-full overflow-x-auto scrollbar-hide">
+                        <div class="flex items-center space-x-6 min-w-max px-2">
+                            <a href="{{ url_for('index') }}" class="{% if request.endpoint == 'index' %}text-red-500{% else %}text-gray-400{% endif %} flex flex-col items-center py-1 transition-colors whitespace-nowrap">
+                                <span class="text-xs mt-1">Home</span>
+                            </a>
+                            <a href="{{ url_for('content.anime_list') }}" class="{% if request.endpoint == 'content.anime_list' %}text-red-500{% else %}text-gray-400{% endif %} flex flex-col items-center py-1 transition-colors whitespace-nowrap">
+                                <span class="text-xs mt-1">Anime</span>
+                            </a>
+                            <a href="{{ url_for('content.donghua_list') }}" class="{% if request.endpoint == 'content.donghua_list' %}text-red-500{% else %}text-gray-400 hover:text-white{% endif %} flex flex-col items-center py-1 transition-colors whitespace-nowrap">
+                                <span class="text-xs mt-1">Donghua</span>
+                            </a>
+                            <a href="{{ url_for('content.movies_list') }}" class="{% if request.endpoint == 'content.movies_list' %}text-red-500{% else %}text-gray-400{% endif %} flex flex-col items-center py-1 transition-colors whitespace-nowrap">
+                                <span class="text-xs mt-1">Movies</span>
+                            </a>
+                            <a href="{{ url_for('content.genres') }}" class="{% if request.endpoint == 'content.genres' %}text-red-500{% else %}text-gray-400{% endif %} flex flex-col items-center py-1 transition-colors whitespace-nowrap">
+                                <span class="text-xs mt-1">Genre</span>
+                            </a>
+                        </div>
+                        <!-- Menu icon tetap di ujung kanan -->
+                        <div class="flex-shrink-0 ml-4">
+                            <button id="mobile-menu-toggle" class="flex items-center justify-center py-2 px-2 text-gray-400 hover:text-white transition-colors" title="Menu">
+                                <i class="fas fa-bars text-lg"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+        <!-- Mobile menu - Desktop Style -->
+        <div id="mobile-navigation" class="hidden fixed inset-0 z-40 bg-black bg-opacity-95 backdrop-blur-sm md:hidden">
+            <div class="flex flex-col h-full">
+                <!-- Mobile Header -->
+                <div class="flex items-center justify-between p-4 border-b border-gray-700">
+                    <a href="{{ url_for('index') }}" class="text-2xl font-bold text-red-500" id="mobile-nav-logo">
+                        {% set mobile_logo_text = system_settings.site_logo_alt or 'AniFlix' %}
+                        {% if 'aniflix' in mobile_logo_text.lower() %}
+                            {% set ani_index = mobile_logo_text.lower().find('ani') %}
+                            {% if ani_index != -1 %}
+                                {% set ani_part = mobile_logo_text[ani_index:ani_index+3] %}
+                                {% set flix_part = mobile_logo_text[ani_index+3:] %}
+                                {{ ani_part }}<span class="text-white">{{ flix_part }}</span>
+                            {% else %}
+                                <span class="text-white">{{ mobile_logo_text }}</span>
+                            {% endif %}
+                        {% else %}
+                            <span class="text-white">{{ mobile_logo_text }}</span>
+                        {% endif %}
+                    </a>
+                    <button id="mobile-menu-close" class="text-gray-300 hover:text-white p-2 border border-gray-600 rounded-md bg-gray-800 hover:bg-gray-700 transition-all duration-200">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <!-- Mobile Search -->
+                <div class="p-4 border-b border-gray-700">
+                    <div id="mobile-search-container-logged" class="relative">
+                        <input type="text" id="mobile-search-input-logged" placeholder="Cari anime atau film..."
+                            class="bg-gray-800 text-white px-4 py-3 pl-12 rounded-full text-sm w-full focus:outline-none focus:ring-2 focus:ring-red-500 transition-all duration-200"
+                            autocomplete="off"
+                            spellcheck="false">
+                        <div class="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
+                            <i class="fas fa-search text-sm"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- All Channels Grid - WeTV Style -->
+                <div class="flex-1 overflow-y-auto">
+                    <div class="p-4">
+                        <h2 class="text-white text-xl font-bold mb-6">All channels</h2>
+                        
+                        <!-- Grid Layout 2x4 -->
+                        <div class="grid grid-cols-2 gap-4 mb-6">
+                            <!-- Home -->
+                            <a href="{{ url_for('index') }}" 
+                               class="bg-gradient-to-br {% if request.endpoint == 'index' %}from-red-600 to-red-800{% else %}from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700{% endif %} rounded-xl p-4 h-20 flex items-center justify-center transition-all duration-200">
+                                <span class="text-white font-semibold text-sm">Home</span>
+                            </a>
+                            
+                            <!-- Donghua -->
+                            <a href="{{ url_for('content.donghua_list') }}" 
+                               class="bg-gradient-to-br {% if request.endpoint == 'content.donghua_list' %}from-red-600 to-red-800{% else %}from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700{% endif %} rounded-xl p-4 h-20 flex items-center justify-center transition-all duration-200">
+                                <span class="text-white font-semibold text-sm">Donghua</span>
+                            </a>
+                            
+                            <!-- Anime -->
+                            <a href="{{ url_for('content.anime_list') }}" 
+                               class="bg-gradient-to-br {% if request.endpoint == 'content.anime_list' %}from-red-600 to-red-800{% else %}from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700{% endif %} rounded-xl p-4 h-20 flex items-center justify-center transition-all duration-200">
+                                <span class="text-white font-semibold text-sm">Anime</span>
+                            </a>
+                            
+                            <!-- Movies -->
+                            <a href="{{ url_for('content.movies_list') }}" 
+                               class="bg-gradient-to-br {% if request.endpoint == 'content.movies_list' %}from-red-600 to-red-800{% else %}from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700{% endif %} rounded-xl p-4 h-20 flex items-center justify-center transition-all duration-200">
+                                <span class="text-white font-semibold text-sm">Movies</span>
+                            </a>
+                            
+                            <!-- Genre -->
+                            <a href="{{ url_for('content.genres') }}" 
+                               class="bg-gradient-to-br {% if request.endpoint == 'content.genres' %}from-red-600 to-red-800{% else %}from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700{% endif %} rounded-xl p-4 h-20 flex items-center justify-center transition-all duration-200">
+                                <span class="text-white font-semibold text-sm">Genres</span>
+                            </a>
+                            
+                            <!-- Dashboard (if logged in) -->
+                            {% if current_user.is_authenticated %}
+                                <a href="{{ url_for('dashboard') }}" 
+                                   class="bg-gradient-to-br {% if request.endpoint == 'dashboard' %}from-red-600 to-red-800{% else %}from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700{% endif %} rounded-xl p-4 h-20 flex items-center justify-center transition-all duration-200">
+                                    <span class="text-white font-semibold text-sm">Dashboard</span>
+                                </a>
+                            {% else %}
+                                <!-- VIP for non-logged users -->
+                                <a href="{{ url_for('subscription.subscription_page') }}" 
+                                   class="bg-gradient-to-br from-yellow-600 to-orange-700 hover:from-yellow-500 hover:to-orange-600 rounded-xl p-4 h-20 flex items-center justify-center transition-all duration-200">
+                                    <span class="text-white font-semibold text-sm flex items-center">
+                                        <i class="fas fa-crown mr-2"></i>VIP
+                                    </span>
+                                </a>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Additional Options for Logged Users -->
+                        {% if current_user.is_authenticated %}
+                        <div class="space-y-2">
+                            <a href="{{ url_for('profile') }}"
+                               class="flex items-center px-4 py-3 {% if request.endpoint == 'profile' or request.endpoint == 'edit_profile' %}text-white bg-red-600{% else %}text-gray-300 hover:text-white hover:bg-gray-800{% endif %} rounded-lg font-medium transition-all duration-200 text-sm">
+                                <i class="fas fa-user-circle mr-3"></i>
+                                Profile
+                            </a>
+                            <a href="{{ url_for('subscription.subscription_page') }}"
+                               class="flex items-center px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg font-medium transition-all duration-200 text-sm">
+                                <i class="fas fa-crown mr-3"></i>
+                                Subscription
+                            </a>
+                            {% if current_user.is_admin() %}
+                                <a href="{{ url_for('admin.admin_dashboard') }}"
+                                   class="flex items-center px-4 py-3 text-yellow-400 hover:text-yellow-300 hover:bg-gray-800 rounded-lg font-medium transition-all duration-200 text-sm">
+                                    <i class="fas fa-cog mr-3"></i>
+                                    Admin Panel
+                                </a>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Bottom Section -->
+                <div class="p-4 border-t border-gray-700">
+                    {% if current_user.is_authenticated %}
+                        <div class="flex items-center justify-between mb-4 p-3 bg-gray-800 rounded-lg">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 bg-red-600 rounded-full flex items-center justify-center mr-3">
+                                    <span class="text-white font-bold">{{ current_user.username[0].upper() }}</span>
+                                </div>
+                                <div>
+                                    <div class="text-white font-medium">{{ current_user.username }}</div>
+                                    {% if current_user.is_vip() %}
+                                        <div class="text-yellow-400 text-sm flex items-center">
+                                            <i class="fas fa-crown mr-1"></i>VIP Member
+                                        </div>
+                                    {% else %}
+                                        <div class="text-gray-400 text-sm">Free Member</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <a href="{{ url_for('auth.logout') }}"
+                           class="flex items-center justify-center px-4 py-3 text-red-400 hover:text-red-300 hover:bg-gray-800 rounded-lg font-medium transition-all duration-200 w-full">
+                            <i class="fas fa-sign-out-alt mr-3"></i>
+                            Sign Out
+                        </a>
+                    {% else %}
+                        <button data-login
+                                class="flex items-center justify-center px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-all duration-200 w-full">
+                            <i class="fas fa-sign-in-alt mr-3"></i>
+                            Sign In
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Professional Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    {% for category, message in messages %}
+                        const notificationType = '{{ category }}' === 'error' ? 'error' : 
+                                               '{{ category }}' === 'success' ? 'success' : 
+                                               '{{ category }}' === 'warning' ? 'warning' : 'info';
+                        
+                        if (typeof showNotification === 'function') {
+                            showNotification('{{ message|safe }}', notificationType);
+                        } else {
+                            // Fallback if showNotification is not available
+                            createProfessionalNotification('{{ message|safe }}', notificationType);
+                        }
+                    {% endfor %}
+                });
+                
+                function createProfessionalNotification(message, type) {
+                    const notification = document.createElement('div');
+                    
+                    const bgColor = {
+                        'success': 'bg-gradient-to-r from-green-500 to-green-600',
+                        'error': 'bg-gradient-to-r from-red-500 to-red-600',
+                        'warning': 'bg-gradient-to-r from-yellow-500 to-yellow-600',
+                        'info': 'bg-gradient-to-r from-blue-500 to-blue-600'
+                    }[type] || 'bg-gradient-to-r from-blue-500 to-blue-600';
+                    
+                    const icon = {
+                        'success': 'fa-check-circle',
+                        'error': 'fa-exclamation-circle',
+                        'warning': 'fa-exclamation-triangle',
+                        'info': 'fa-info-circle'
+                    }[type] || 'fa-info-circle';
+                    
+                    notification.className = `notification-toast fixed top-6 right-6 z-[9999] ${bgColor} text-white px-6 py-4 rounded-xl max-w-md transform translate-x-full transition-all duration-500 ease-out border border-white/20`;
+                    
+                    notification.innerHTML = `
+                        <div class="flex items-start space-x-3">
+                            <div class="flex-shrink-0 mt-0.5">
+                                <i class="fas ${icon} text-lg"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-medium leading-5">${message}</p>
+                            </div>
+                            <button class="flex-shrink-0 ml-4 text-white/80 hover:text-white transition-colors duration-200" onclick="removeFlashNotification(this.closest('div').closest('div'))">
+                                <i class="fas fa-times text-sm"></i>
+                            </button>
+                        </div>
+                    `;
+                    
+                    document.body.appendChild(notification);
+                    
+                    // Animate in
+                    setTimeout(() => {
+                        notification.classList.remove('translate-x-full');
+                        notification.classList.add('translate-x-0');
+                    }, 100);
+                    
+                    // Auto remove after 5 seconds
+                    setTimeout(() => {
+                        removeFlashNotification(notification);
+                    }, 5000);
+                }
+                
+                function removeFlashNotification(notification) {
+                    if (notification && notification.parentNode) {
+                        notification.classList.add('notification-removing');
+                        setTimeout(() => {
+                            if (notification.parentNode) {
+                                notification.remove();
+                            }
+                        }, 500);
+                    }
+                }
+            </script>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Trailer Modal -->
+    <div id="trailer-modal" class="trailer-modal">
+        <div class="trailer-modal-content">
+            <button class="trailer-close-btn" onclick="closeTrailerModal()">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="video-container">
+                <iframe id="trailer-iframe" src="" frameborder="0" allowfullscreen allow="autoplay; encrypted-media"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-black py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
+                <div>
+                    <h3 class="text-white text-lg font-semibold mb-4">{{ system_settings.site_title or 'AniFlix' }}</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-400 hover:text-white">About Us</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Careers</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">News</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Help Center</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h3 class="text-white text-lg font-semibold mb-4">Browse</h3>
+                    <ul class="space-y-2">
+                        <li><a href="{{ url_for('content.anime_list') }}" class="text-gray-400 hover:text-white">Anime</a></li>
+                        <li><a href="{{ url_for('content.movies_list') }}" class="text-gray-400 hover:text-white">Movies</a></li>
+                        <li><a href="{{ url_for('content.genres') }}" class="text-gray-400 hover:text-white">Genres</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Popular</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h3 class="text-white text-lg font-semibold mb-4">Legal</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-400 hover:text-white">Terms of Use</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Privacy Policy</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Cookie Policy</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">DMCA</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h3 class="text-white text-lg font-semibold mb-4">Connect With Us</h3>
+                    <div class="flex space-x-4 mb-4">
+                        <a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-instagram"></i></a>
+                        <a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-discord"></i></a>
+                        <a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-youtube"></i></a>
+                    </div>
+                    <p class="text-gray-400 text-sm">Download our mobile app:</p>
+                    <div class="flex space-x-2 mt-2">
+                        <a href="#" class="bg-gray-800 text-white px-3 py-1 rounded text-sm flex items-center">
+                            <i class="fab fa-apple mr-1"></i> App Store
+                        </a>
+                        <a href="#" class="bg-gray-800 text-white px-3 py-1 rounded text-sm flex items-center">
+                            <i class="fab fa-google-play mr-1"></i> Play Store
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="border-t border-gray-800 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
+                <p class="text-gray-400 text-sm mb-4 md:mb-0">© 2024 {{ system_settings.site_title or 'AniFlix' }}. All rights reserved.</p>
+                <div class="flex space-x-6">
+                    <a href="#" class="text-gray-400 hover:text-white text-sm">Privacy</a>
+                    <a href="#" class="text-gray-400 hover:text-white text-sm">Terms</a>
+                    <a href="#" class="text-gray-400 hover:text-white text-sm">Sitemap</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Login Modal -->
+    {% if not current_user.is_authenticated %}
+    <div id="login-modal" class="fixed inset-0 z-50 hidden overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen px-4 text-center">
+            <div class="fixed inset-0 transition-opacity" aria-hidden="true">
+                <div class="absolute inset-0 bg-gray-900 opacity-75"></div>
+            </div>
+            <div
+                class="inline-block bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all max-w-lg w-full p-6 z-50">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-2xl font-bold text-white">Welcome Back</h3>
+                    <button id="close-login" class="text-gray-400 hover:text-white">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <!-- Error Message for Modal -->
+                <div id="modal-error-message" class="hidden mb-4 p-4 bg-red-600 bg-opacity-20 border border-red-500 rounded-lg">
+                    <div class="flex items-center">
+                        <i class="fas fa-exclamation-triangle text-red-500 mr-2"></i>
+                        <span id="modal-error-text" class="text-red-300 text-sm"></span>
+                    </div>
+                </div>
+                
+                <form id="modal-login-form" method="POST" action="{{ url_for('auth.login') }}" class="space-y-4">
+                    <div>
+                        <label for="login-email" class="block text-sm font-medium text-gray-300 mb-1">Email</label>
+                        <input type="email" id="login-email" name="email"
+                            class="w-full bg-gray-700 text-white rounded-md px-4 py-2" required>
+                    </div>
+                    <div>
+                        <label for="login-password"
+                            class="block text-sm font-medium text-gray-300 mb-1">Password</label>
+                        <input type="password" id="login-password" name="password"
+                            class="w-full bg-gray-700 text-white rounded-md px-4 py-2" required>
+                    </div>
+                    <button type="submit"
+                        class="w-full bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-md font-medium">
+                        Log In
+                    </button>
+                    <p class="text-sm text-gray-400 text-center">
+                        Don't have an account? <a href="{{ url_for('auth.login') }}" class="text-red-500 hover:underline" id="switch-to-signup">Sign Up</a>
+                    </p>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sign Up Modal -->
+    <div id="signup-modal" class="fixed inset-0 z-50 hidden overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen px-4 text-center">
+            <div class="fixed inset-0 transition-opacity" aria-hidden="true">
+                <div class="absolute inset-0 bg-gray-900 opacity-75"></div>
+            </div>
+            <div
+                class="inline-block bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all max-w-lg w-full p-6 z-50">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-2xl font-bold text-white">Create Your Account</h3>
+                    <button id="close-signup" class="text-gray-400 hover:text-white">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <form method="POST" action="{{ url_for('auth.register') }}" class="space-y-4">
+                    <div>
+                        <label for="signup-username" class="block text-sm font-medium text-gray-300 mb-1">Username</label>
+                        <input type="text" id="signup-username" name="username"
+                            class="w-full bg-gray-700 text-white rounded-md px-4 py-2" required>
+                    </div>
+                    <div>
+                        <label for="signup-email" class="block text-sm font-medium text-gray-300 mb-1">Email</label>
+                        <input type="email" id="signup-email" name="email"
+                            class="w-full bg-gray-700 text-white rounded-md px-4 py-2" required>
+                    </div>
+                    <div>
+                        <label for="signup-password" class="block text-sm font-medium text-gray-300 mb-1">Password</label>
+                        <input type="password" id="signup-password" name="password"
+                            class="w-full bg-gray-700 text-white rounded-md px-4 py-2" required minlength="6">
+                    </div>
+                    <button type="submit"
+                        class="w-full bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-md font-medium">
+                        Create Account
+                    </button>
+                    <p class="text-sm text-gray-400 text-center">
+                        Already have an account? <a href="#" class="text-red-500 hover:underline" id="switch-to-login">Log In</a>
+                    </p>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- JavaScript -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    <script>
+        // Login Modal functionality
+        const loginButtons = document.querySelectorAll('[data-login]');
+        const loginModal = document.getElementById('login-modal');
+        const signupModal = document.getElementById('signup-modal');
+        
+        if (loginModal) {
+            const closeLogin = document.getElementById('close-login');
+            const switchToSignup = document.getElementById('switch-to-signup');
+
+            loginButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    loginModal.classList.remove('hidden');
+                    document.body.style.overflow = 'hidden';
+                });
+            });
+
+            if (closeLogin) {
+                closeLogin.addEventListener('click', () => {
+                    loginModal.classList.add('hidden');
+                    document.body.style.overflow = 'auto';
+                });
+            }
+
+            if (switchToSignup && signupModal) {
+                switchToSignup.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    loginModal.classList.add('hidden');
+                    signupModal.classList.remove('hidden');
+                });
+            }
+
+            // Close modal when clicking outside
+            window.addEventListener('click', (event) => {
+                if (event.target === loginModal) {
+                    loginModal.classList.add('hidden');
+                    document.body.style.overflow = 'auto';
+                }
+            });
+
+            // Handle modal login form submission
+            const modalLoginForm = document.getElementById('modal-login-form');
+            if (modalLoginForm) {
+                modalLoginForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    const formData = new FormData(this);
+                    const submitButton = this.querySelector('button[type="submit"]');
+                    const modalErrorMessage = document.getElementById('modal-error-message');
+                    const modalErrorText = document.getElementById('modal-error-text');
+                    
+                    // Clear previous errors
+                    modalErrorMessage.classList.add('hidden');
+                    
+                    // Show loading state
+                    submitButton.disabled = true;
+                    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Logging in...';
+                    
+                    fetch(this.action, {
+                        method: 'POST',
+                        body: formData,
+                        redirect: 'follow'
+                    })
+                    .then(response => {
+                        console.log('Response status:', response.status);
+                        console.log('Response URL:', response.url);
+                        
+                        if (response.status === 200 && response.url.includes('/dashboard')) {
+                            // Successful login - redirect happened
+                            window.location.href = '/dashboard';
+                            return null;
+                        } else if (response.ok && response.url.includes('/dashboard')) {
+                            // Direct redirect to dashboard
+                            window.location.href = '/dashboard';
+                            return null;
+                        }
+                        return response.text();
+                    })
+                    .then(html => {
+                        if (html && typeof html === 'string') {
+                            // Login failed, show error message
+                            modalErrorText.textContent = 'Email atau password salah. Silakan coba lagi.';
+                            modalErrorMessage.classList.remove('hidden');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Login error:', error);
+                        modalErrorText.textContent = 'Terjadi kesalahan saat login. Silakan coba lagi.';
+                        modalErrorMessage.classList.remove('hidden');
+                    })
+                    .finally(() => {
+                        // Reset button state
+                        submitButton.disabled = false;
+                        submitButton.innerHTML = 'Log In';
+                    });
+                });
+            }
+        }
+
+        // Sign Up Modal functionality
+        if (signupModal) {
+            const closeSignup = document.getElementById('close-signup');
+            const switchToLogin = document.getElementById('switch-to-login');
+
+            if (closeSignup) {
+                closeSignup.addEventListener('click', () => {
+                    signupModal.classList.add('hidden');
+                    document.body.style.overflow = 'auto';
+                });
+            }
+
+            if (switchToLogin && loginModal) {
+                switchToLogin.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    signupModal.classList.add('hidden');
+                    loginModal.classList.remove('hidden');
+                });
+            }
+
+            // Close modal when clicking outside
+            window.addEventListener('click', (event) => {
+                if (event.target === signupModal) {
+                    signupModal.classList.add('hidden');
+                    document.body.style.overflow = 'auto';
+                }
+            });
+        }
+
+        // Simple Mobile menu toggle
+        const mobileToggle = document.getElementById('mobile-menu-toggle');
+        const mobileNav = document.getElementById('mobile-navigation');
+        const mobileMenuClose = document.getElementById('mobile-menu-close');
+
+        if (mobileToggle && mobileNav) {
+            mobileToggle.addEventListener('click', function(e) {
+                e.preventDefault();
+                mobileNav.classList.toggle('hidden');
+            });
+            
+            // Handle mobile menu close button
+            if (mobileMenuClose) {
+                mobileMenuClose.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    mobileNav.classList.add('hidden');
+                });
+            }
+            
+            // Close menu when clicking on navigation links
+            mobileNav.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') {
+                    mobileNav.classList.add('hidden');
+                }
+            });
+        }
+
+        // Carousel functionality
+        const carousel = document.querySelector('.carousel');
+        const prevButton = document.querySelector('.carousel-prev');
+        const nextButton = document.querySelector('.carousel-next');
+
+        if (carousel && prevButton && nextButton) {
+            prevButton.addEventListener('click', () => {
+                carousel.scrollBy({
+                    left: -300,
+                    behavior: 'smooth'
+                });
+            });
+
+            nextButton.addEventListener('click', () => {
+                carousel.scrollBy({
+                    left: 300,
+                    behavior: 'smooth'
+                });
+            });
+        }
+
+        // User menu dropdown
+        const userMenuButton = document.getElementById('user-menu-button');
+        const userMenu = document.getElementById('user-menu');
+        
+        if (userMenuButton && userMenu) {
+            userMenuButton.addEventListener('click', () => {
+                userMenu.classList.toggle('hidden');
+            });
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', (event) => {
+                if (!userMenuButton.contains(event.target) && !userMenu.contains(event.target)) {
+                    userMenu.classList.add('hidden');
+                }
+            });
+        }
+
+        // Trailer Modal Functions
+        function openTrailerModal(trailerUrl) {
+            const modal = document.getElementById('trailer-modal');
+            const iframe = document.getElementById('trailer-iframe');
+            
+            // Convert YouTube URLs to embed format
+            let embedUrl = trailerUrl;
+            if (trailerUrl.includes('youtube.com/watch?v=')) {
+                const videoId = trailerUrl.split('v=')[1].split('&')[0];
+                embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+            } else if (trailerUrl.includes('youtu.be/')) {
+                const videoId = trailerUrl.split('youtu.be/')[1].split('?')[0];
+                embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+            }
+            
+            iframe.src = embedUrl;
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeTrailerModal() {
+            const modal = document.getElementById('trailer-modal');
+            const iframe = document.getElementById('trailer-iframe');
+            
+            iframe.src = '';
+            modal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+
+        // Close modal when clicking outside
+        document.addEventListener('DOMContentLoaded', function() {
+            const modal = document.getElementById('trailer-modal');
+            if (modal) {
+                modal.addEventListener('click', function(e) {
+                    if (e.target === modal) {
+                        closeTrailerModal();
+                    }
+                });
+            }
+            
+            // Initialize admin animations
+            initializeAdminAnimations();
+        });
+
+        /* Admin Animations */
+        function initializeAdminAnimations() {
+            // Stagger animation for table rows
+            const tableRows = document.querySelectorAll('.table-row');
+            tableRows.forEach((row, index) => {
+                row.style.animationDelay = `${index * 0.1}s`;
+            });
+
+            // Real-time search animation
+            const searchInputs = document.querySelectorAll('.search-input');
+            searchInputs.forEach(input => {
+                input.addEventListener('input', function() {
+                    this.style.transform = 'scale(1.02)';
+                    setTimeout(() => {
+                        this.style.transform = 'scale(1)';
+                    }, 200);
+                });
+            });
+
+            // Action button ripple effect
+            const actionButtons = document.querySelectorAll('.action-button');
+            actionButtons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    const rect = this.getBoundingClientRect();
+                    const ripple = document.createElement('div');
+                    ripple.style.position = 'absolute';
+                    ripple.style.borderRadius = '50%';
+                    ripple.style.background = 'rgba(255,255,255,0.3)';
+                    ripple.style.transform = 'scale(0)';
+                    ripple.style.animation = 'ripple 0.6s linear';
+                    ripple.style.left = (e.clientX - rect.left - 10) + 'px';
+                    ripple.style.top = (e.clientY - rect.top - 10) + 'px';
+                    ripple.style.width = ripple.style.height = '20px';
+                    ripple.style.pointerEvents = 'none';
+                    
+                    this.style.position = 'relative';
+                    this.style.overflow = 'hidden';
+                    this.appendChild(ripple);
+                    
+                    setTimeout(() => {
+                        if (ripple.parentNode) {
+                            ripple.remove();
+                        }
+                    }, 600);
+                });
+            });
+
+            // Search form auto-submit with delay (commented out for now)
+            /*
+            const searchForms = document.querySelectorAll('form');
+            searchForms.forEach(form => {
+                const searchInput = form.querySelector('.search-input');
+                if (searchInput) {
+                    let timeout;
+                    searchInput.addEventListener('input', function() {
+                        clearTimeout(timeout);
+                        timeout = setTimeout(() => {
+                            if (this.value.length >= 2 || this.value.length === 0) {
+                                form.submit();
+                            }
+                        }, 1000);
+                    });
+                }
+            });
+            */
+        }
+
+        // Add ripple keyframe animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes ripple {
+                to {
+                    transform: scale(4);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Scroll-responsive navbar functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const horizontalNavbar = document.getElementById('horizontal-navbar');
+            let lastScrollTop = 0;
+            let isNavbarVisible = true;
+            
+            if (horizontalNavbar) {
+                window.addEventListener('scroll', function() {
+                    const currentScrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                    
+                    // Avoid negative scrolling issues
+                    if (currentScrollTop < 0) return;
+                    
+                    // Check scroll direction
+                    if (currentScrollTop > lastScrollTop && currentScrollTop > 50) {
+                        // Scrolling down - hide horizontal navbar
+                        if (isNavbarVisible) {
+                            console.log('Hiding horizontal navbar - scrolling down');
+                            horizontalNavbar.classList.add('hidden-on-scroll');
+                            isNavbarVisible = false;
+                        }
+                    } else if (currentScrollTop < lastScrollTop || currentScrollTop <= 50) {
+                        // Scrolling up or near top - show horizontal navbar
+                        if (!isNavbarVisible) {
+                            console.log('Showing horizontal navbar - scrolling up');
+                            horizontalNavbar.classList.remove('hidden-on-scroll');
+                            isNavbarVisible = true;
+                        }
+                    }
+                    
+                    // Update last scroll position
+                    lastScrollTop = currentScrollTop;
+                }, { passive: true });
+                
+                console.log('Scroll-responsive navbar initialized');
+            }
+        });
+    </script>
+
+    <!-- Socket.IO for real-time notifications -->
+    {% if current_user.is_authenticated %}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+    <script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
+    {% endif %}
+
+    <!-- Logo Debug Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('=== LOGO DEBUG INFO ===');
+            console.log('Logo URL: {{ system_settings.site_logo_url or "empty" }}');
+            console.log('Site Title: {{ system_settings.site_title or "AniFlix" }}');
+            
+            const logoImg = document.querySelector('[data-debug="logo-image"]');
+            if (logoImg) {
+                console.log('Logo element found and loaded');
+            } else {
+                console.log('Using text fallback: AniFlix');
+            }
+            
+            // Listen for logo updates from System Settings via localStorage
+            function updateLogoFromStorage() {
+                const newLogoText = localStorage.getItem('currentLogoText');
+                const newLogoUrl = localStorage.getItem('currentLogoUrl');
+                const updateTime = localStorage.getItem('logoUpdateTime');
+                
+                if (newLogoText && updateTime) {
+                    const timeDiff = Date.now() - parseInt(updateTime);
+                    // Only apply if update was recent (within 5 seconds)
+                    if (timeDiff < 5000) {
+                        console.log('🔄 Received logo update from localStorage:', newLogoText);
+                        applyLogoUpdate(newLogoUrl, newLogoText);
+                    }
+                }
+            }
+            
+            // Function to apply logo update to current page
+            function applyLogoUpdate(url, text) {
+                const displayText = text || 'AniFlix';
+                console.log('🎯 Applying logo update on main page:', displayText);
+                
+                // Find all navigation logo elements and update them
+                const selectors = [
+                    'nav span.text-2xl',
+                    '.flex-shrink-0 span',
+                    '#main-nav-logo span',
+                    '#mobile-nav-logo',
+                    'nav a span',
+                    '.text-red-500'
+                ];
+                
+                let updated = 0;
+                selectors.forEach(selector => {
+                    const elements = document.querySelectorAll(selector);
+                    elements.forEach(element => {
+                        const currentText = element.textContent || '';
+                        // Only update if it looks like a logo (contains "Ani" or "Flix" or is short)
+                        if (currentText.includes('Ani') || currentText.includes('Flix') || currentText.length < 15) {
+                            let logoHtml;
+                            if (displayText.toLowerCase().includes('aniflix')) {
+                                const aniIndex = displayText.toLowerCase().indexOf('ani');
+                                if (aniIndex !== -1) {
+                                    const aniPart = displayText.substring(aniIndex, aniIndex + 3);
+                                    const flixPart = displayText.substring(aniIndex + 3);
+                                    logoHtml = `<span class="text-red-500">${aniPart}</span><span class="text-white">${flixPart}</span>`;
+                                } else {
+                                    logoHtml = `<span class="text-white">${displayText}</span>`;
+                                }
+                            } else {
+                                logoHtml = `<span class="text-white">${displayText}</span>`;
+                            }
+                            
+                            element.innerHTML = logoHtml;
+                            updated++;
+                            console.log('✅ Updated logo element:', selector);
+                        }
+                    });
+                });
+                
+                console.log(`🏁 Logo update complete: ${updated} elements updated to "${displayText}"`);
+            }
+            
+            // Listen for storage events
+            window.addEventListener('storage', function(e) {
+                if (e.key === 'currentLogoText') {
+                    console.log('📡 Received storage event for logo update');
+                    updateLogoFromStorage();
+                }
+            });
+            
+            // Listen for custom events
+            window.addEventListener('logoUpdate', function(e) {
+                console.log('📡 Received custom logo update event:', e.detail);
+                applyLogoUpdate(e.detail.url, e.detail.text);
+            });
+            
+            // Listen for messages from iframe/child windows
+            window.addEventListener('message', function(e) {
+                if (e.data && e.data.type === 'UPDATE_LOGO') {
+                    console.log('📡 Received logo update message:', e.data);
+                    applyLogoUpdate(e.data.logoUrl, e.data.logoText);
+                }
+            });
+            
+            // Check for existing logo update on page load
+            updateLogoFromStorage();
+        });
+    </script>
+
+    <!-- Plyr.io and HLS.js Scripts for video player -->
+    <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.15/dist/hls.min.js"></script>
+
+    <!-- Additional page-specific scripts -->
+    {% block scripts %}{% endblock %}
+</body>
+
+</html>
