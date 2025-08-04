@@ -202,68 +202,75 @@ class EnhancedIQiyiScraper:
             print(f"✅ Generated description: {generated_desc}")
             return generated_desc
         
-        print(f"❌ No description found")
+        print(f"❌ No description found in episode data")
         return None
+
+    def _extract_description_from_album(self, player_data: Dict[str, Any]) -> Optional[str]:
+        """Extract description from props.initialState.album.videoAlbumInfo.desc"""
+        print(f"📝 Extracting description from album info...")
+        
+        try:
+            props = player_data.get('props', {})
+            initial_state = props.get('initialState', {})
+            album = initial_state.get('album', {})
+            video_album_info = album.get('videoAlbumInfo', {})
+            
+            # Get description from desc field
+            desc = video_album_info.get('desc')
+            if desc:
+                description = str(desc).strip()
+                if description and description.lower() not in ['null', 'none', '', 'undefined'] and len(description) > 3:
+                    print(f"✅ Using description from album.videoAlbumInfo.desc: {description}")
+                    return description
+            
+            print(f"❌ No description found in album info")
+            return None
+            
+        except Exception as e:
+            print(f"❌ Error extracting description from album: {e}")
+            return None
 
     def _extract_thumbnail(self, episode_data: Dict[str, Any]) -> Optional[str]:
-        """Enhanced thumbnail extraction with comprehensive field search"""
+        """Extract thumbnail from correct videoInfo path"""
         print(f"🖼️ Extracting thumbnail from episode data...")
 
-        # More comprehensive thumbnail field list from reference
-        thumbnail_fields = [
-            'thumbnail', 'poster', 'image', 'cover', 'pic', 'img', 'picUrl', 'imageUrl',
-            'posterUrl', 'coverUrl', 'thumbUrl', 'previewImage', 'snapshot', 'vpic', 'rseat',
-            'imgUrl', 'picPath', 'imagePath', 'coverImage', 'posterImage', 'thumbImage',
-            'previewImg', 'coverPic', 'albumImg', 'episodeImg', 'showImg', 'screencap'
-        ]
+        # For playlist episodes, use imgUrl (current working method)
+        if episode_data.get('imgUrl'):
+            thumbnail = str(episode_data.get('imgUrl')).strip()
+            if thumbnail and thumbnail not in ['null', 'none', '']:
+                final_url = thumbnail if thumbnail.startswith('http') else f"https:{thumbnail}"
+                print(f"✅ Using thumbnail from imgUrl: {final_url}")
+                return final_url
 
-        # Search direct fields
-        for field in thumbnail_fields:
-            if episode_data.get(field):
-                thumbnail = str(episode_data.get(field)).strip()
-                if thumbnail and thumbnail not in ['null', 'none', '']:
-                    # More flexible URL validation
-                    if any(thumbnail.startswith(prefix) for prefix in ['http://', 'https://', '//', '/', 'data:']):
-                        final_url = thumbnail if thumbnail.startswith('http') else f"https:{thumbnail}"
-                        print(f"✅ Using thumbnail from {field}: {final_url}")
-                        return final_url
-
-        # Search ALL nested objects thoroughly
-        for key, value in episode_data.items():
-            if isinstance(value, dict):
-                for field in thumbnail_fields:
-                    if field in value and value[field]:
-                        thumbnail = str(value[field]).strip()
-                        if thumbnail and thumbnail not in ['null', 'none', '']:
-                            if any(thumbnail.startswith(prefix) for prefix in ['http://', 'https://', '//', '/', 'data:']):
-                                final_url = thumbnail if thumbnail.startswith('http') else f"https:{thumbnail}"
-                                print(f"✅ Using thumbnail from {key}.{field}: {final_url}")
-                                return final_url
-
-        # Look for any field containing 'img', 'pic', 'photo', or 'image' in the name
-        for key, value in episode_data.items():
-            if any(word in key.lower() for word in ['img', 'pic', 'photo', 'image', 'cover', 'poster']):
-                if isinstance(value, str) and value.strip():
-                    thumbnail = value.strip()
-                    if any(thumbnail.startswith(prefix) for prefix in ['http://', 'https://', '//', '/', 'data:']):
-                        final_url = thumbnail if thumbnail.startswith('http') else f"https:{thumbnail}"
-                        print(f"✅ Using fallback thumbnail from {key}: {final_url}")
-                        return final_url
-
-        # Search nested objects for any image-like fields
-        for key, value in episode_data.items():
-            if isinstance(value, dict):
-                for subkey, subvalue in value.items():
-                    if any(word in subkey.lower() for word in ['img', 'pic', 'photo', 'image', 'cover', 'poster']):
-                        if isinstance(subvalue, str) and subvalue.strip():
-                            thumbnail = subvalue.strip()
-                            if any(thumbnail.startswith(prefix) for prefix in ['http://', 'https://', '//', '/', 'data:']):
-                                final_url = thumbnail if thumbnail.startswith('http') else f"https:{thumbnail}"
-                                print(f"✅ Using nested fallback thumbnail from {key}.{subkey}: {final_url}")
-                                return final_url
-
-        print(f"❌ No thumbnail found")
+        print(f"❌ No thumbnail found in episode data")
         return None
+
+    def _extract_thumbnail_from_videoinfo(self, player_data: Dict[str, Any]) -> Optional[str]:
+        """Extract thumbnail from props.initialState.play.videoInfo path"""
+        print(f"🖼️ Extracting thumbnail from videoInfo...")
+        
+        try:
+            props = player_data.get('props', {})
+            initial_state = props.get('initialState', {})
+            play = initial_state.get('play', {})
+            video_info = play.get('videoInfo', {})
+            
+            # Try thumbnailUrl1, thumbnailUrl2, thumbnailUrl3 in order
+            for i in range(1, 4):
+                thumbnail_key = f'thumbnailUrl{i}'
+                if video_info.get(thumbnail_key):
+                    thumbnail = str(video_info.get(thumbnail_key)).strip()
+                    if thumbnail and thumbnail not in ['null', 'none', '']:
+                        final_url = thumbnail if thumbnail.startswith('http') else f"https:{thumbnail}"
+                        print(f"✅ Using thumbnail from videoInfo.{thumbnail_key}: {final_url}")
+                        return final_url
+            
+            print(f"❌ No thumbnail found in videoInfo")
+            return None
+            
+        except Exception as e:
+            print(f"❌ Error extracting thumbnail from videoInfo: {e}")
+            return None
 
     def _extract_duration(self, episode_data: Dict[str, Any]) -> Optional[str]:
         """Enhanced duration extraction with comprehensive field search and debugging"""
@@ -337,11 +344,78 @@ class EnhancedIQiyiScraper:
                                 print(f"✅ Using nested duration from {key}.{subkey}: {formatted_duration}")
                                 return formatted_duration
 
-        # Since IQiyi playlist doesn't include duration data, provide a realistic default
-        # Most anime episodes are typically 20-24 minutes
-        default_duration = "24:00"
-        print(f"⚠️ Duration not available in playlist data, using default: {default_duration}")
-        return default_duration
+        print(f"❌ No duration found in episode data")
+        return None
+
+    def _extract_duration_from_videoinfo(self, player_data: Dict[str, Any]) -> Optional[str]:
+        """Extract duration from props.initialState.play.videoInfo.isoDuration"""
+        print(f"🕒 Extracting duration from videoInfo...")
+        
+        try:
+            props = player_data.get('props', {})
+            initial_state = props.get('initialState', {})
+            play = initial_state.get('play', {})
+            video_info = play.get('videoInfo', {})
+            
+            # Get isoDuration field
+            iso_duration = video_info.get('isoDuration')
+            if iso_duration:
+                duration_str = str(iso_duration).strip()
+                if duration_str and duration_str not in ['null', 'none', '', '0']:
+                    # Convert ISO duration format if needed
+                    formatted_duration = self._format_iso_duration(duration_str)
+                    if formatted_duration:
+                        print(f"✅ Using duration from videoInfo.isoDuration: {formatted_duration}")
+                        return formatted_duration
+            
+            print(f"❌ No duration found in videoInfo")
+            return None
+            
+        except Exception as e:
+            print(f"❌ Error extracting duration from videoInfo: {e}")
+            return None
+
+    def _format_iso_duration(self, iso_duration: str) -> Optional[str]:
+        """Format ISO duration to readable format"""
+        try:
+            # If it's already in time format, return as is
+            if ':' in iso_duration:
+                return iso_duration
+            
+            # If it's ISO 8601 duration format (PT1H30M45S)
+            if iso_duration.startswith('PT'):
+                import re
+                # Extract hours, minutes, seconds
+                pattern = r'PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?'
+                match = re.match(pattern, iso_duration)
+                if match:
+                    hours = int(match.group(1) or 0)
+                    minutes = int(match.group(2) or 0)
+                    seconds = int(match.group(3) or 0)
+                    
+                    # Format as HH:MM:SS or MM:SS
+                    if hours > 0:
+                        return f"{hours}:{minutes:02d}:{seconds:02d}"
+                    else:
+                        return f"{minutes:02d}:{seconds:02d}"
+            
+            # If it's just a number (seconds)
+            if iso_duration.isdigit():
+                seconds = int(iso_duration)
+                hours = seconds // 3600
+                minutes = (seconds % 3600) // 60
+                remaining_seconds = seconds % 60
+                
+                if hours > 0:
+                    return f"{hours}:{minutes:02d}:{remaining_seconds:02d}"
+                else:
+                    return f"{minutes:02d}:{remaining_seconds:02d}"
+            
+            return iso_duration
+            
+        except Exception as e:
+            print(f"❌ Error formatting ISO duration: {e}")
+            return None
 
     def _format_duration(self, duration_val: str, field_name: str) -> Optional[str]:
         """Format duration value to readable format"""
@@ -400,6 +474,14 @@ class EnhancedIQiyiScraper:
                 description = self._extract_description(current_episode)
                 thumbnail = self._extract_thumbnail(current_episode)
                 duration = self._extract_duration(current_episode)
+                
+                # Try to get more detailed data from videoInfo and album if not found
+                if not description:
+                    description = self._extract_description_from_album(player_data)
+                if not thumbnail:
+                    thumbnail = self._extract_thumbnail_from_videoinfo(player_data)
+                if not duration:
+                    duration = self._extract_duration_from_videoinfo(player_data)
                 
                 # Extract episode number from title or URL
                 episode_number = None
@@ -508,9 +590,18 @@ class EnhancedIQiyiScraper:
                 else:
                     actual_episode_number = episode_counter
                 
+                # Extract from episode data (playlist level)
                 description = self._extract_description(episode)
                 thumbnail = self._extract_thumbnail(episode)
                 duration = self._extract_duration(episode)
+                
+                # Try to get more detailed data from videoInfo and album if not found
+                if not description:
+                    description = self._extract_description_from_album(player_data)
+                if not thumbnail:
+                    thumbnail = self._extract_thumbnail_from_videoinfo(player_data)
+                if not duration:
+                    duration = self._extract_duration_from_videoinfo(player_data)
                 
                 # Build episode URL
                 album_url = episode.get('albumPlayUrl', '')
