@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plyr Test</title>
+    <!-- Plyr CSS -->
+    <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
+    <style>
+        body {
+            background: #0f172a;
+            color: #fff;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .video-container {
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Plyr.io Test</h1>
+        <div class="video-container">
+            <video id="player" controls crossorigin playsinline>
+                <source src="https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4" type="video/mp4">
+            </video>
+        </div>
+        <p id="status">Loading...</p>
+    </div>
+
+    <!-- Plyr.js -->
+    <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
+    <script>
+        console.log('Testing Plyr.io...');
+        document.getElementById('status').textContent = 'Initializing Plyr...';
+        
+        if (typeof Plyr !== 'undefined') {
+            const player = new Plyr('#player');
+            console.log('Plyr initialized:', player);
+            document.getElementById('status').textContent = 'Plyr.io working correctly!';
+        } else {
+            console.error('Plyr not loaded');
+            document.getElementById('status').textContent = 'Error: Plyr.js not loaded';
+        }
+    </script>
+</body>
+</html>

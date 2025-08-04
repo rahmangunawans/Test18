@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Video Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #1a1a1a;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        
+        .video-container {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        video {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <h1>Simple Video Test (No Libraries)</h1>
+    
+    <div class="video-container">
+        <video controls preload="metadata">
+            <source src="https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+    </div>
+    
+    <script>
+        const video = document.querySelector('video');
+        
+        video.addEventListener('loadstart', () => {
+            console.log('Video load started');
+        });
+        
+        video.addEventListener('loadedmetadata', () => {
+            console.log('Video metadata loaded');
+        });
+        
+        video.addEventListener('canplay', () => {
+            console.log('Video can start playing');
+        });
+        
+        video.addEventListener('error', (e) => {
+            console.error('Video error:', e);
+        });
+    </script>
+</body>
+</html>
