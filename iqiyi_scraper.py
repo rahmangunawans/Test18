@@ -237,6 +237,83 @@ class IQiyiScraper:
             return f'https://cache.video.iqiyi.com/dash?{dash_query}'
         return None
 
+    def _extract_duration(self, soup: BeautifulSoup) -> Optional[str]:
+        """Extract video duration from page data"""
+        try:
+            # Method 1: Try meta tags for duration
+            meta_duration = soup.find('meta', property='video:duration')
+            if meta_duration:
+                duration_seconds = meta_duration.get('content', '')
+                if duration_seconds and duration_seconds.isdigit():
+                    # Convert seconds to MM:SS format
+                    total_seconds = int(duration_seconds)
+                    minutes = total_seconds // 60
+                    seconds = total_seconds % 60
+                    return f"{minutes:02d}:{seconds:02d}"
+
+            # Method 2: Try JSON-LD structured data
+            script_tags = soup.find_all('script', type='application/ld+json')
+            for script in script_tags:
+                try:
+                    json_data = json.loads(script.get_text())
+                    if isinstance(json_data, dict) and 'duration' in json_data:
+                        duration = json_data['duration']
+                        # Parse ISO 8601 duration format (PT1H23M45S)
+                        if duration.startswith('PT'):
+                            duration_match = re.search(r'PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?', duration)
+                            if duration_match:
+                                hours = int(duration_match.group(1) or 0)
+                                minutes = int(duration_match.group(2) or 0)
+                                seconds = int(duration_match.group(3) or 0)
+                                total_minutes = hours * 60 + minutes
+                                return f"{total_minutes:02d}:{seconds:02d}"
+                except (json.JSONDecodeError, KeyError, ValueError):
+                    continue
+
+            # Method 3: Try to find duration in player data
+            if self._player_data:
+                try:
+                    # Look for duration in various possible locations in player data
+                    props = self._player_data.get('props', {})
+                    initial_props = props.get('initialProps', {})
+                    page_props = initial_props.get('pageProps', {})
+                    pre_player_data = page_props.get('prePlayerData', {})
+                    
+                    # Check for duration in video info
+                    video_info = pre_player_data.get('videoInfo', {})
+                    if 'duration' in video_info:
+                        duration_seconds = video_info['duration']
+                        if isinstance(duration_seconds, (int, float)):
+                            minutes = int(duration_seconds) // 60
+                            seconds = int(duration_seconds) % 60
+                            return f"{minutes:02d}:{seconds:02d}"
+                            
+                except (KeyError, TypeError, ValueError):
+                    pass
+
+            # Method 4: Look for duration in page text patterns
+            duration_patterns = [
+                r'(\d{1,2}):(\d{2})',  # MM:SS format
+                r'Duration[:\s]*(\d+)[:\s]*(\d+)',  # Duration: MM:SS
+                r'时长[:\s]*(\d+)[:\s]*分[:\s]*(\d+)[:\s]*秒',  # Chinese format
+            ]
+            
+            page_text = soup.get_text()
+            for pattern in duration_patterns:
+                match = re.search(pattern, page_text)
+                if match:
+                    minutes = int(match.group(1))
+                    seconds = int(match.group(2)) if len(match.groups()) > 1 else 0
+                    if minutes < 300 and seconds < 60:  # Reasonable duration check
+                        return f"{minutes:02d}:{seconds:02d}"
+
+            print("⚠️ Could not extract duration from episode")
+            return None
+            
+        except Exception as e:
+            print(f"❌ Error extracting duration: {e}")
+            return None
+
     def extract_episode_info(self) -> Optional[EpisodeData]:
         """Extract informasi episode dari URL"""
         print(f"🎬 Extracting episode info dari: {self.url}")
@@ -278,6 +355,9 @@ class IQiyiScraper:
         if meta_desc:
             description = meta_desc.get('content', '')
 
+        # Extract duration from player data or meta tags
+        duration = self._extract_duration(soup)
+
         # Get DASH URL dan M3U8
         dash_url = self.get_dash_url()
         m3u8_url = None
@@ -300,6 +380,7 @@ class IQiyiScraper:
             m3u8_url=m3u8_url,
             thumbnail=thumbnail,
             description=description,
+            duration=duration,
             is_valid=is_valid
         )
 
@@ -428,6 +509,7 @@ def scrape_iqiyi_episode(url: str) -> dict:
                     'm3u8_content': episode_data.m3u8_url,
                     'thumbnail_url': episode_data.thumbnail,
                     'description': episode_data.description,
+                    'duration': episode_data.duration,
                     'is_valid': episode_data.is_valid
                 }
             }
@@ -463,6 +545,7 @@ def scrape_iqiyi_playlist(url: str, max_episodes: int = None) -> dict:
                     'm3u8_content': episode.m3u8_url,
                     'thumbnail_url': episode.thumbnail,
                     'description': episode.description,
+                    'duration': episode.duration,
                     'is_valid': episode.is_valid
                 })
             

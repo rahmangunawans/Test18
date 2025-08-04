@@ -7,6 +7,7 @@ AniFlix is a premium anime and movie streaming platform designed to offer a Netf
 Preferred communication style: Simple, everyday language.
 Database preference: Always use Supabase PostgreSQL database exclusively - no fallback mechanisms.
 Code cleanliness: Remove redundant maintenance and setup scripts to keep codebase clean.
+Auto Scrape Enhancement: Enhanced auto scrape functionality in admin interface to include thumbnail and duration extraction from IQiyi episodes (August 4, 2025).
 
 ## System Architecture
 

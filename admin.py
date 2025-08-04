@@ -810,11 +810,27 @@ def api_auto_add_episodes():
                 # Create new episode
                 logging.info(f"Creating episode {episode_data.get('episode_number')}: {episode_data.get('title')}")
                 
+                # Convert duration from MM:SS format to seconds if available
+                duration_seconds = None
+                duration_str = episode_data.get('duration')
+                if duration_str:
+                    try:
+                        # Parse MM:SS format
+                        if ':' in duration_str:
+                            minutes, seconds = map(int, duration_str.split(':'))
+                            duration_seconds = minutes * 60 + seconds
+                        else:
+                            # If it's already in seconds
+                            duration_seconds = int(duration_str)
+                    except (ValueError, AttributeError):
+                        duration_seconds = None
+                
                 new_episode = Episode(
                     content_id=content_id,
                     episode_number=episode_data.get('episode_number'),
                     title=episode_data.get('title')[:200] if episode_data.get('title') else None,  # Limit title length
                     description=episode_data.get('description'),  # TEXT field, no limit needed
+                    duration=duration_seconds,  # Duration in seconds
                     server_m3u8_url=episode_data.get('m3u8_content'),  # TEXT field, no limit needed
                     server_embed_url=episode_data.get('url'),  # IQiyi URL sebagai embed fallback
                     iqiyi_play_url=episode_data.get('url'),  # IQiyi play URL untuk Server 3
