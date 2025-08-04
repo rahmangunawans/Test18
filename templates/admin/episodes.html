@@ -1,0 +1,696 @@
+{% extends "responsive_base.html" %}
+
+{% block title %}Manage Episodes - {{ content.title }}{% endblock %}
+
+{% block content %}
+<div class="bg-gray-900 pt-32 pb-8 admin-content">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <div class="flex items-center mb-4">
+                <a href="{{ url_for('admin.admin_content') }}" class="text-red-500 hover:text-red-400 mr-4">
+                    <i class="fas fa-arrow-left text-lg"></i>
+                </a>
+                <h1 class="text-3xl font-bold text-white">{{ content.title }} - Episodes</h1>
+            </div>
+            <p class="text-gray-400">Manage episodes for this content</p>
+        </div>
+
+        <!-- Episodes Table -->
+        <div class="bg-gray-800 rounded-lg overflow-hidden admin-card fade-in">
+            <div class="px-6 py-4 border-b border-gray-700">
+                <div class="flex flex-col lg:flex-row lg:items-center gap-4">
+                    <div class="flex items-center justify-between lg:justify-start flex-1">
+                        <h2 class="text-xl font-semibold text-white">
+                            {% if search %}Search Results ({{ episodes|length }}){% else %}Episodes ({{ episodes|length }}){% endif %}
+                        </h2>
+                    </div>
+                    
+                    <!-- Search Form -->
+                    <div class="flex-1 max-w-md">
+                        <form method="GET" class="flex gap-2">
+                            <div class="flex-1 relative">
+                                <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm"></i>
+                                <input type="text" 
+                                       name="search" 
+                                       value="{{ search or '' }}"
+                                       placeholder="Search episodes..."
+                                       class="w-full pl-9 pr-3 py-2 text-sm bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent search-input">
+                            </div>
+                            {% if search %}
+                            <a href="{{ url_for('admin.manage_episodes', content_id=content.id) }}" 
+                               class="bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg text-sm transition-all"
+                               title="Clear Search">
+                                <i class="fas fa-times"></i>
+                            </a>
+                            {% endif %}
+                        </form>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="flex gap-2">
+                        <!-- Bulk Delete Controls (Hidden by default) -->
+                        <div id="bulkDeleteControls" class="hidden flex gap-2">
+                            <button onclick="selectAllEpisodes()" 
+                                    class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-sm hover:shadow-lg transition-all admin-button"
+                                    title="Select All Episodes">
+                                <i class="fas fa-check-square"></i>
+                                <span class="hidden sm:inline ml-2">Select All</span>
+                            </button>
+                            <button onclick="deselectAllEpisodes()" 
+                                    class="bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg text-sm hover:shadow-lg transition-all admin-button"
+                                    title="Deselect All">
+                                <i class="fas fa-square"></i>
+                                <span class="hidden sm:inline ml-2">Deselect All</span>
+                            </button>
+                            <button onclick="deleteSelectedEpisodes()" 
+                                    class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg text-sm hover:shadow-lg transition-all admin-button"
+                                    title="Delete Selected Episodes"
+                                    id="deleteSelectedBtn" disabled>
+                                <i class="fas fa-trash"></i>
+                                <span class="hidden sm:inline ml-2">Delete Selected (<span id="selectedCount">0</span>)</span>
+                            </button>
+                        </div>
+                        
+                        <button onclick="toggleBulkMode()" 
+                                class="bg-orange-600 hover:bg-orange-700 text-white px-3 py-2 rounded-lg text-sm hover:shadow-lg transition-all admin-button pulse-glow"
+                                title="Toggle Bulk Delete Mode"
+                                id="bulkModeBtn">
+                            <i class="fas fa-tasks"></i>
+                            <span class="hidden sm:inline ml-2">Bulk Delete</span>
+                        </button>
+                        <button onclick="openAutoScrapeModal()" 
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm hover:shadow-lg transition-all admin-button pulse-glow"
+                                title="Auto Scrape IQiyi Episodes">
+                            <i class="fas fa-robot"></i>
+                            <span class="hidden sm:inline ml-2">Auto Scrape</span>
+                        </button>
+                        <a href="{{ url_for('admin.add_episode', content_id=content.id) }}" 
+                           class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm hover:shadow-lg transition-all admin-button pulse-glow"
+                           title="Add New Episode">
+                            <i class="fas fa-plus"></i>
+                            <span class="hidden sm:inline ml-2">Add Episode</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            {% if episodes %}
+            <div class="admin-table-scroll">
+                <table class="w-full">
+                    <thead class="bg-gray-700 sticky top-0 z-10">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider" id="bulkSelectHeader" style="display: none;">
+                                <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll()" class="rounded bg-gray-600 border-gray-500 text-red-600 focus:ring-red-500">
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Episode</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Title</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Duration</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Servers</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-700">
+                        {% for episode in episodes %}
+                        <tr class="table-row slide-in">
+                            <td class="px-6 py-4 whitespace-nowrap bulk-select-cell" style="display: none;">
+                                <input type="checkbox" class="episode-checkbox rounded bg-gray-600 border-gray-500 text-red-600 focus:ring-red-500" 
+                                       data-episode-id="{{ episode.id }}" onchange="updateSelectedCount()">
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-white">Episode {{ episode.episode_number }}</div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="text-sm text-white">{{ episode.title or 'No title' }}</div>
+                                {% if episode.description %}
+                                <div class="text-sm text-gray-400 truncate max-w-xs">{{ episode.description[:100] }}...</div>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-white">{{ episode.duration or 'N/A' }} min</div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="flex flex-wrap gap-1">
+                                    {% if episode.server_m3u8_url %}
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400 border border-green-500/30" title="M3U8 Server Available">
+                                        <i class="fas fa-play-circle mr-1"></i>M3U8
+                                    </span>
+                                    {% endif %}
+                                    {% if episode.server_embed_url %}
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-500/20 text-blue-400 border border-blue-500/30" title="Embed Server Available">
+                                        <i class="fas fa-code mr-1"></i>Embed
+                                    </span>
+                                    {% endif %}
+
+                                    {% if episode.video_url %}
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-500/20 text-yellow-400 border border-yellow-500/30" title="Direct Video Available">
+                                        <i class="fas fa-video mr-1"></i>Direct
+                                    </span>
+                                    {% endif %}
+                                    {% if not episode.server_m3u8_url and not episode.server_embed_url and not episode.video_url %}
+                                    <span class="text-red-400 text-xs">No servers configured</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm">
+                                <div class="flex space-x-1 sm:space-x-2">
+                                    <a href="{{ url_for('content.watch_episode', episode_id=episode.id) }}" 
+                                       class="p-2 text-blue-400 hover:text-blue-300 hover:bg-blue-900 hover:bg-opacity-30 rounded transition-all action-button" 
+                                       title="Watch Episode" target="_blank">
+                                        <i class="fas fa-play text-sm"></i>
+                                    </a>
+                                    <a href="{{ url_for('admin.edit_episode', episode_id=episode.id) }}" 
+                                       class="p-2 text-yellow-400 hover:text-yellow-300 hover:bg-yellow-900 hover:bg-opacity-30 rounded transition-all action-button" 
+                                       title="Edit Episode">
+                                        <i class="fas fa-edit text-sm"></i>
+                                    </a>
+                                    <form method="POST" action="{{ url_for('admin.delete_episode', episode_id=episode.id) }}" 
+                                          class="inline" onsubmit="return confirm('Are you sure you want to delete this episode?')">
+                                        <button type="submit" 
+                                                class="p-2 text-red-400 hover:text-red-300 hover:bg-red-900 hover:bg-opacity-30 rounded transition-all action-button" 
+                                                title="Delete Episode">
+                                            <i class="fas fa-trash text-sm"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-12">
+                <div class="text-gray-400 text-6xl mb-4">📺</div>
+                <h3 class="text-xl font-medium text-white mb-2">No Episodes Yet</h3>
+                <p class="text-gray-400 mb-6">Start by adding the first episode to this content.</p>
+                <a href="{{ url_for('admin.add_episode', content_id=content.id) }}" 
+                   class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-medium">
+                    Add First Episode
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Auto Scrape Modal -->
+<div id="autoScrapeModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-gray-800 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-white">
+                        <i class="fas fa-robot mr-2 text-blue-400"></i>Auto Scrape IQiyi Episodes
+                    </h3>
+                    <button onclick="closeAutoScrapeModal()" class="text-gray-400 hover:text-white">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+
+                <!-- Step 1: Input URL -->
+                <div id="step1" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">
+                            IQiyi Episode/Playlist URL
+                        </label>
+                        <input type="url" id="iqiyiUrl" 
+                               class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                               placeholder="https://www.iq.com/play/...">
+                        <p class="text-xs text-gray-400 mt-1">
+                            Masukkan URL episode IQiyi atau halaman utama untuk auto scraping
+                        </p>
+                    </div>
+
+                    <div class="flex flex-wrap gap-4">
+                        <button onclick="scrapeSingleEpisode()" 
+                                class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors">
+                            <i class="fas fa-play mr-2"></i>Single Episode
+                        </button>
+                        <button onclick="scrapeAllPlaylist()" 
+                                class="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors">
+                            <i class="fas fa-list mr-2"></i>All Playlist Episodes
+                        </button>
+                    </div>
+                    
+                    <div id="scrapeStatus" class="mt-4 text-sm"></div>
+                </div>
+
+                <!-- Step 2: Review Results -->
+                <div id="step2" class="hidden space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h4 class="text-lg font-semibold text-white">Hasil Scraping</h4>
+                        <button onclick="backToStep1()" class="text-blue-400 hover:text-blue-300">
+                            <i class="fas fa-arrow-left mr-1"></i>Back
+                        </button>
+                    </div>
+                    
+                    <div id="scrapeResults" class="space-y-3"></div>
+                    
+                    <div class="bg-gray-700 p-4 rounded-lg mt-4">
+                        <h5 class="text-white font-medium mb-3">
+                            <i class="fas fa-save mr-2 text-green-400"></i>Simpan Episode ke Database
+                        </h5>
+                        <p class="text-gray-300 text-sm mb-4">
+                            Pilih episode yang ingin ditambahkan ke database, lalu klik tombol "Simpan Episode" di bawah.
+                        </p>
+                        <div class="flex gap-3">
+                            <button onclick="addSelectedEpisodes()" 
+                                    class="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium text-lg">
+                                <i class="fas fa-save mr-2"></i>Simpan Episode
+                            </button>
+                            <button onclick="selectAllEpisodes()" 
+                                    class="px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
+                                <i class="fas fa-check-double mr-2"></i>Pilih Semua
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let scrapedEpisodes = [];
+
+function openAutoScrapeModal() {
+    document.getElementById('autoScrapeModal').classList.remove('hidden');
+    document.getElementById('step1').classList.remove('hidden');
+    document.getElementById('step2').classList.add('hidden');
+    document.getElementById('iqiyiUrl').value = '';
+    document.getElementById('scrapeStatus').innerHTML = '';
+}
+
+function closeAutoScrapeModal() {
+    document.getElementById('autoScrapeModal').classList.add('hidden');
+    scrapedEpisodes = [];
+}
+
+function backToStep1() {
+    document.getElementById('step1').classList.remove('hidden');
+    document.getElementById('step2').classList.add('hidden');
+}
+
+async function scrapeSingleEpisode() {
+    const url = document.getElementById('iqiyiUrl').value.trim();
+    if (!url) {
+        showScrapeStatus('Masukkan URL IQiyi terlebih dahulu', 'error');
+        return;
+    }
+
+    showScrapeStatus('Scraping single episode with enhanced scraper...', 'info');
+    
+    try {
+        const response = await fetch('/admin/api/scrape-episode', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ iqiyi_url: url })
+        });
+
+        const result = await response.json();
+        
+        if (result.success) {
+            scrapedEpisodes = [result.episode_data];
+            showScrapeResults();
+            showScrapeStatus(result.message, 'success');
+        } else {
+            showScrapeStatus(`Error: ${result.error}`, 'error');
+        }
+    } catch (error) {
+        showScrapeStatus(`Network error: ${error.message}`, 'error');
+    }
+}
+
+async function scrapeAllPlaylist() {
+    const url = document.getElementById('iqiyiUrl').value.trim();
+    if (!url) {
+        showScrapeStatus('Masukkan URL IQiyi terlebih dahulu', 'error');
+        return;
+    }
+
+    showScrapeStatus('Scraping all episodes from playlist with enhanced scraper...', 'info');
+    
+    try {
+        const response = await fetch('/admin/api/scrape-all-playlist', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ 
+                iqiyi_url: url,
+                max_episodes: 50  // Set reasonable limit
+            })
+        });
+
+        const result = await response.json();
+        
+        if (result.success) {
+            scrapedEpisodes = result.playlist_data.episodes;
+            showScrapeResults();
+            showScrapeStatus(result.message, 'success');
+        } else {
+            showScrapeStatus(`Error: ${result.error}`, 'error');
+        }
+    } catch (error) {
+        showScrapeStatus(`Network error: ${error.message}`, 'error');
+    }
+}
+
+async function scrapeBasic() {
+    const url = document.getElementById('iqiyiUrl').value.trim();
+    if (!url) {
+        showScrapeStatus('Masukkan URL IQiyi terlebih dahulu', 'error');
+        return;
+    }
+
+    showScrapeStatus('Using basic scraping mode (fast, no M3U8)...', 'info');
+    
+    try {
+        const response = await fetch('/admin/api/scrape-basic', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                iqiyi_url: url,
+                batch_size: 15
+            })
+        });
+
+        const result = await response.json();
+        
+        if (result.success) {
+            scrapedEpisodes = result.playlist_data.episodes;
+            showScrapeResults();
+            showScrapeStatus(result.message, 'success');
+        } else {
+            showScrapeStatus(`Error: ${result.error}`, 'error');
+        }
+    } catch (error) {
+        showScrapeStatus(`Network error: ${error.message}`, 'error');
+    }
+}
+
+async function scrapePlaylist(batchSize = null) {
+    const url = document.getElementById('iqiyiUrl').value.trim();
+    if (!url) {
+        showScrapeStatus('Masukkan URL IQiyi terlebih dahulu', 'error');
+        return;
+    }
+
+    const batchText = batchSize ? `${batchSize} episodes` : '15 episodes (max safe batch)';
+    showScrapeStatus(`Scraping playlist (${batchText}) - ini mungkin memakan waktu...`, 'info');
+    
+    try {
+        const requestBody = {
+            iqiyi_url: url
+        };
+        
+        if (batchSize) {
+            requestBody.batch_size = batchSize;
+        } else {
+            // For "ALL episodes" option, set a high number or remove limit
+            requestBody.batch_size = 999; // High number to get all episodes
+        }
+        
+        const response = await fetch('/admin/api/scrape-playlist', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestBody)
+        });
+
+        const result = await response.json();
+        
+        if (result.success) {
+            scrapedEpisodes = result.playlist_data.episodes;
+            showScrapeResults();
+            showScrapeStatus(result.message, 'success');
+        } else {
+            showScrapeStatus(`Error: ${result.error}`, 'error');
+        }
+    } catch (error) {
+        showScrapeStatus(`Network error: ${error.message}`, 'error');
+    }
+}
+
+function showScrapeResults() {
+    document.getElementById('step1').classList.add('hidden');
+    document.getElementById('step2').classList.remove('hidden');
+    
+    const resultsDiv = document.getElementById('scrapeResults');
+    resultsDiv.innerHTML = '';
+
+    scrapedEpisodes.forEach((episode, index) => {
+        const validIcon = episode.is_valid ? 
+            '<i class="fas fa-check-circle text-green-400"></i>' : 
+            '<i class="fas fa-exclamation-triangle text-yellow-400"></i>';
+        
+        const validText = episode.is_valid ? 'Valid M3U8' : 'No M3U8';
+        
+        resultsDiv.innerHTML += `
+            <div class="bg-gray-700 p-4 rounded-lg">
+                <div class="flex items-center gap-3">
+                    <input type="checkbox" id="episode_${index}" checked 
+                           class="w-4 h-4 text-blue-600 bg-gray-600 border-gray-500 rounded focus:ring-blue-500">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2 mb-1">
+                            <h5 class="font-medium text-white">Episode ${episode.episode_number || 'N/A'}: ${episode.title}</h5>
+                            ${validIcon}
+                            <span class="text-xs ${episode.is_valid ? 'text-green-400' : 'text-yellow-400'}">${validText}</span>
+                        </div>
+                        ${episode.description ? `<p class="text-sm text-gray-300 mb-2">${episode.description.substring(0, 100)}...</p>` : ''}
+                        <div class="text-xs text-gray-400">
+                            ${episode.thumbnail_url ? '<i class="fas fa-image mr-1"></i>Thumbnail tersedia' : ''}
+                            ${episode.m3u8_content ? '<i class="fas fa-video ml-3 mr-1"></i>M3U8 content tersedia' : ''}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+}
+
+function selectAllEpisodes() {
+    const checkboxes = document.querySelectorAll('#scrapeResults input[type="checkbox"]');
+    checkboxes.forEach(cb => cb.checked = true);
+}
+
+async function addSelectedEpisodes() {
+    const selectedEpisodes = [];
+    const checkboxes = document.querySelectorAll('#scrapeResults input[type="checkbox"]:checked');
+    
+    checkboxes.forEach(cb => {
+        const index = parseInt(cb.id.split('_')[1]);
+        selectedEpisodes.push(scrapedEpisodes[index]);
+    });
+
+    if (selectedEpisodes.length === 0) {
+        showScrapeStatus('Pilih minimal satu episode', 'error');
+        return;
+    }
+
+    showScrapeStatus('Menambahkan episode ke database...', 'info');
+    
+    // Disable button while processing
+    const button = event.target;
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Saving...';
+
+    try {
+        console.log('Sending save request with episodes:', selectedEpisodes.length);
+        
+        const response = await fetch('/admin/api/auto-add-episodes', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                content_id: {{ content.id }},
+                episodes_data: selectedEpisodes
+            })
+        });
+
+        const result = await response.json();
+        
+        if (result.success) {
+            showScrapeStatus(`Berhasil menambahkan ${result.added_count} episode!`, 'success');
+            setTimeout(() => {
+                location.reload();
+            }, 2000);
+        } else {
+            showScrapeStatus(`Error: ${result.error}`, 'error');
+            button.disabled = false;
+            button.innerHTML = '<i class="fas fa-plus mr-2"></i>Add Selected Episodes';
+        }
+    } catch (error) {
+        showScrapeStatus(`Network error: ${error.message}`, 'error');
+        button.disabled = false;
+        button.innerHTML = '<i class="fas fa-plus mr-2"></i>Add Selected Episodes';
+    }
+}
+
+function showScrapeStatus(message, type) {
+    const statusDiv = document.getElementById('scrapeStatus');
+    const colors = {
+        'info': 'text-blue-400',
+        'success': 'text-green-400',
+        'error': 'text-red-400'
+    };
+    
+    statusDiv.innerHTML = `<div class="${colors[type]}">${message}</div>`;
+}
+
+// Bulk Delete Functions
+let bulkModeActive = false;
+
+function toggleBulkMode() {
+    bulkModeActive = !bulkModeActive;
+    const bulkControls = document.getElementById('bulkDeleteControls');
+    const bulkSelectHeader = document.getElementById('bulkSelectHeader');
+    const bulkSelectCells = document.querySelectorAll('.bulk-select-cell');
+    const bulkModeBtn = document.getElementById('bulkModeBtn');
+    
+    if (bulkModeActive) {
+        bulkControls.classList.remove('hidden');
+        bulkSelectHeader.style.display = 'table-cell';
+        bulkSelectCells.forEach(cell => cell.style.display = 'table-cell');
+        bulkModeBtn.innerHTML = '<i class="fas fa-times"></i><span class="hidden sm:inline ml-2">Exit Bulk</span>';
+        bulkModeBtn.className = bulkModeBtn.className.replace('bg-orange-600 hover:bg-orange-700', 'bg-red-600 hover:bg-red-700');
+    } else {
+        bulkControls.classList.add('hidden');
+        bulkSelectHeader.style.display = 'none';
+        bulkSelectCells.forEach(cell => cell.style.display = 'none');
+        bulkModeBtn.innerHTML = '<i class="fas fa-tasks"></i><span class="hidden sm:inline ml-2">Bulk Delete</span>';
+        bulkModeBtn.className = bulkModeBtn.className.replace('bg-red-600 hover:bg-red-700', 'bg-orange-600 hover:bg-orange-700');
+        
+        // Reset all checkboxes
+        document.querySelectorAll('.episode-checkbox').forEach(cb => cb.checked = false);
+        document.getElementById('selectAllCheckbox').checked = false;
+        updateSelectedCount();
+    }
+}
+
+function selectAllEpisodes() {
+    const checkboxes = document.querySelectorAll('.episode-checkbox');
+    checkboxes.forEach(cb => cb.checked = true);
+    document.getElementById('selectAllCheckbox').checked = true;
+    updateSelectedCount();
+}
+
+function deselectAllEpisodes() {
+    const checkboxes = document.querySelectorAll('.episode-checkbox');
+    checkboxes.forEach(cb => cb.checked = false);
+    document.getElementById('selectAllCheckbox').checked = false;
+    updateSelectedCount();
+}
+
+function toggleSelectAll() {
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    const episodeCheckboxes = document.querySelectorAll('.episode-checkbox');
+    
+    episodeCheckboxes.forEach(cb => cb.checked = selectAllCheckbox.checked);
+    updateSelectedCount();
+}
+
+function updateSelectedCount() {
+    const selectedCheckboxes = document.querySelectorAll('.episode-checkbox:checked');
+    const count = selectedCheckboxes.length;
+    const deleteBtn = document.getElementById('deleteSelectedBtn');
+    const countSpan = document.getElementById('selectedCount');
+    
+    countSpan.textContent = count;
+    deleteBtn.disabled = count === 0;
+    
+    // Update select all checkbox state
+    const allCheckboxes = document.querySelectorAll('.episode-checkbox');
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    
+    if (count === 0) {
+        selectAllCheckbox.indeterminate = false;
+        selectAllCheckbox.checked = false;
+    } else if (count === allCheckboxes.length) {
+        selectAllCheckbox.indeterminate = false;
+        selectAllCheckbox.checked = true;
+    } else {
+        selectAllCheckbox.indeterminate = true;
+    }
+}
+
+async function deleteSelectedEpisodes() {
+    const selectedCheckboxes = document.querySelectorAll('.episode-checkbox:checked');
+    const episodeIds = Array.from(selectedCheckboxes).map(cb => cb.dataset.episodeId);
+    
+    if (episodeIds.length === 0) {
+        alert('Silakan pilih episode yang ingin dihapus');
+        return;
+    }
+    
+    const confirmation = confirm(`Apakah Anda yakin ingin menghapus ${episodeIds.length} episode yang dipilih? Tindakan ini tidak dapat dibatalkan.`);
+    if (!confirmation) return;
+    
+    const deleteBtn = document.getElementById('deleteSelectedBtn');
+    const originalText = deleteBtn.innerHTML;
+    deleteBtn.disabled = true;
+    deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span class="hidden sm:inline ml-2">Deleting...</span>';
+    
+    try {
+        const response = await fetch('/admin/episodes/bulk-delete', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                episode_ids: episodeIds
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showNotification(`Berhasil menghapus ${result.deleted_count} episode`, 'success');
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
+        } else {
+            showNotification(`Error: ${result.error}`, 'error');
+            deleteBtn.disabled = false;
+            deleteBtn.innerHTML = originalText;
+        }
+    } catch (error) {
+        showNotification(`Network error: ${error.message}`, 'error');
+        deleteBtn.disabled = false;
+        deleteBtn.innerHTML = originalText;
+    }
+}
+
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-xl text-white font-medium transition-all duration-300 transform translate-x-full ${
+        type === 'success' ? 'bg-green-500' : 
+        type === 'error' ? 'bg-red-500' : 
+        'bg-blue-500'
+    }`;
+    notification.textContent = message;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.classList.remove('translate-x-full');
+    }, 100);
+    
+    setTimeout(() => {
+        notification.classList.add('translate-x-full');
+        setTimeout(() => {
+            if (document.body.contains(notification)) {
+                document.body.removeChild(notification);
+            }
+        }, 300);
+    }, 3000);
+}
+</script>
+{% endblock %}

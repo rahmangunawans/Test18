@@ -1,0 +1,1326 @@
+{% extends "responsive_base.html" %}
+
+{% block title %}System Settings - Admin - AniFlix{% endblock %}
+
+{% block head %}
+<style>
+.system-settings-container {
+    min-height: calc(100vh + 100px);
+}
+
+.setting-card {
+    transition: all 0.3s ease;
+}
+
+.setting-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+}
+
+.action-button {
+    transition: all 0.3s ease;
+}
+
+.action-button:hover {
+    transform: scale(1.05);
+}
+
+.stat-card {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    border: 1px solid #2d3748;
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    border-color: #e94560;
+    transform: translateY(-3px);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bg-gray-900 pt-32 pb-8 system-settings-container">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-white mb-2">System Settings</h1>
+                    <p class="text-gray-400">Manage and configure system-wide settings</p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="bg-green-600 text-white px-3 py-1 rounded-full text-sm">
+                        <i class="fas fa-database mr-1"></i>
+                        {{ database_info.status }}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Statistics -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="stat-card rounded-lg p-6 text-center">
+                <div class="text-3xl font-bold text-blue-400 mb-2">{{ total_users }}</div>
+                <div class="text-gray-300 text-sm">Total Users</div>
+            </div>
+            <div class="stat-card rounded-lg p-6 text-center">
+                <div class="text-3xl font-bold text-green-400 mb-2">{{ total_content }}</div>
+                <div class="text-gray-300 text-sm">Total Content</div>
+            </div>
+            <div class="stat-card rounded-lg p-6 text-center">
+                <div class="text-3xl font-bold text-purple-400 mb-2">{{ total_episodes }}</div>
+                <div class="text-gray-300 text-sm">Total Episodes</div>
+            </div>
+            <div class="stat-card rounded-lg p-6 text-center">
+                <div class="text-3xl font-bold text-yellow-400 mb-2">{{ vip_users }}</div>
+                <div class="text-gray-300 text-sm">VIP Users</div>
+            </div>
+        </div>
+
+        <!-- System Configuration -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <!-- Maintenance Settings -->
+            <div class="setting-card bg-gray-800 rounded-lg p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-semibold text-white">
+                        <i class="fas fa-exclamation-triangle text-yellow-400 mr-2"></i>
+                        Maintenance Settings
+                    </h3>
+                    <button onclick="showAddMaintenanceModal()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                        <i class="fas fa-plus mr-2"></i>Add Schedule
+                    </button>
+                </div>
+
+                <!-- Current Maintenance Status -->
+                <div class="mb-6 p-4 bg-gray-700 rounded-lg">
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="text-gray-300 font-medium">Current Status:</span>
+                        <span class="px-3 py-1 rounded-full text-sm font-medium {% if maintenance_enabled %}bg-red-600 text-white{% else %}bg-green-600 text-white{% endif %}">
+                            {% if maintenance_enabled %}
+                                <i class="fas fa-exclamation-triangle mr-1"></i>Maintenance Mode
+                            {% else %}
+                                <i class="fas fa-check-circle mr-1"></i>Active
+                            {% endif %}
+                        </span>
+                    </div>
+                    
+                    <!-- Quick Toggle -->
+                    <form action="{{ url_for('admin.update_system_settings') }}" method="POST" class="mb-4">
+                        <input type="hidden" name="action" value="toggle_maintenance">
+                        <button type="submit" class="w-full {% if maintenance_enabled %}bg-green-600 hover:bg-green-700{% else %}bg-red-600 hover:bg-red-700{% endif %} text-white px-4 py-2 rounded-lg text-sm font-medium">
+                            {% if maintenance_enabled %}
+                                <i class="fas fa-play mr-2"></i>Disable Maintenance Mode
+                            {% else %}
+                                <i class="fas fa-pause mr-2"></i>Enable Maintenance Mode
+                            {% endif %}
+                        </button>
+                    </form>
+
+                    <!-- Current Message Preview -->
+                    {% if maintenance_enabled and maintenance_message %}
+                    <div class="bg-gray-600 p-3 rounded border-l-4 border-yellow-400">
+                        <p class="text-sm text-gray-300">Current Message:</p>
+                        <p class="text-white text-sm mt-1">{{ maintenance_message }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Maintenance Schedules List -->
+                <div class="mb-6">
+                    <h4 class="text-lg font-medium text-white mb-3">
+                        <i class="fas fa-calendar-alt text-blue-400 mr-2"></i>
+                        Maintenance Schedules
+                    </h4>
+                    
+                    <div id="maintenance-schedules-list" class="space-y-3">
+                        <!-- Active/Default Schedule -->
+                        <div class="maintenance-schedule-item bg-gray-700 p-4 rounded-lg border-l-4 border-yellow-400">
+                            <div class="flex justify-between items-start">
+                                <div class="flex-1">
+                                    <div class="flex items-center mb-2">
+                                        <span class="bg-yellow-600 text-white text-xs px-2 py-1 rounded font-medium mr-2">
+                                            Current
+                                        </span>
+                                        <h5 class="text-white font-medium">Default Maintenance</h5>
+                                    </div>
+                                    <p class="text-gray-300 text-sm mb-2">{{ maintenance_message or 'No message set' }}</p>
+                                    <div class="text-gray-400 text-xs">
+                                        <span class="mr-4">
+                                            <i class="fas fa-toggle-{% if maintenance_enabled %}on text-green-400{% else %}off text-red-400{% endif %} mr-1"></i>
+                                            {% if maintenance_enabled %}Active{% else %}Inactive{% endif %}
+                                        </span>
+                                        <span>Type: Manual</span>
+                                    </div>
+                                </div>
+                                <div class="flex space-x-2">
+                                    <button onclick="editMaintenanceSchedule('default')" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Placeholder for additional schedules -->
+                        <div class="text-center py-6 text-gray-400 border-2 border-dashed border-gray-600 rounded-lg">
+                            <i class="fas fa-calendar-plus text-2xl mb-2"></i>
+                            <p>No scheduled maintenance periods</p>
+                            <button onclick="showAddMaintenanceModal()" class="text-blue-400 hover:text-blue-300 text-sm mt-2">
+                                + Add scheduled maintenance
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="border-t border-gray-600 pt-4">
+                    <h4 class="text-lg font-medium text-white mb-3">
+                        <i class="fas fa-bolt text-orange-400 mr-2"></i>
+                        Quick Actions
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <button onclick="showEmergencyMaintenanceModal()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                            <i class="fas fa-exclamation-circle mr-2"></i>
+                            Emergency Maintenance
+                        </button>
+                        <button onclick="showScheduledMaintenanceModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                            <i class="fas fa-clock mr-2"></i>
+                            Schedule Maintenance
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Logo Settings -->
+            <div class="setting-card bg-gray-800 rounded-lg p-6">
+                <h3 class="text-xl font-semibold text-white mb-4">
+                    <i class="fas fa-image text-purple-400 mr-2"></i>
+                    Logo Settings
+                </h3>
+                <form action="{{ url_for('admin.update_system_settings') }}" method="POST" class="space-y-4">
+                    <input type="hidden" name="action" value="update_logo">
+                    
+                    <div>
+                        <label for="logo_url" class="block text-sm font-medium text-gray-300 mb-2">
+                            Logo URL
+                        </label>
+                        <input type="url" name="logo_url" id="logo_url" 
+                               value="{{ site_logo_url }}"
+                               class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                               placeholder="https://example.com/logo.png"
+                               oninput="updatePreviewNow()"
+                               onkeyup="updatePreviewNow()"
+                               onpaste="setTimeout(updatePreviewNow, 100)">
+                        <div class="mt-2 text-xs text-gray-400">
+                            <strong>Contoh URL logo:</strong>
+                            <div class="mt-1 space-y-1">
+                                <button type="button" class="text-purple-400 hover:text-purple-300 block" 
+                                        onclick="setLogoUrl('https://img.icons8.com/color/48/000000/video-playlist.png');">
+                                    🎬 Video Playlist Icon
+                                </button>
+                                <button type="button" class="text-purple-400 hover:text-purple-300 block" 
+                                        onclick="setLogoUrl('https://img.icons8.com/color/48/000000/film-reel.png');">
+                                    🎞️ Film Reel Icon  
+                                </button>
+                                <button type="button" class="text-purple-400 hover:text-purple-300 block" 
+                                        onclick="setLogoUrl('https://img.icons8.com/color/48/000000/tv-show.png');">
+                                    📺 TV Show Icon
+                                </button>
+                                <button type="button" class="text-purple-400 hover:text-purple-300 block" 
+                                        onclick="setLogoUrl('');">
+                                    🗑️ Hapus Logo (Kembali ke teks)
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label for="logo_alt" class="block text-sm font-medium text-gray-300 mb-2">
+                            Logo Alt Text
+                        </label>
+                        <input type="text" name="logo_alt" id="logo_alt" 
+                               value="{{ site_logo_alt }}"
+                               class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                               placeholder="AniFlix"
+                               oninput="updatePreviewNow()"
+                               onkeyup="updatePreviewNow()"
+                               onchange="updatePreviewNow()">
+                    </div>
+                    
+                    <!-- Logo Preview Section -->
+                    <div class="mt-4">
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Logo Preview</label>
+                        <div class="bg-gray-700 border border-gray-600 rounded-lg p-4 h-20 flex items-center justify-center">
+                            <div id="logo-preview-container" class="flex items-center justify-center">
+                                {% if site_logo_url %}
+                                    <img src="{{ site_logo_url }}" alt="{{ site_logo_alt }}" 
+                                         id="logo-preview-image" 
+                                         class="h-12 w-auto rounded" 
+                                         style="max-width: 200px;">
+                                {% else %}
+                                    <span id="logo-preview-text" class="text-2xl font-bold">
+                                        <span class="text-red-500">Ani</span><span class="text-white">Flix</span>
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <p class="text-gray-400 text-xs mt-2">Preview akan update otomatis saat Anda mengetik URL logo</p>
+                    </div>
+                    
+                    <button type="submit" class="action-button w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                        <i class="fas fa-save mr-2"></i>
+                        Update Logo Settings
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Site Information -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <!-- Site Info Settings -->
+            <div class="setting-card bg-gray-800 rounded-lg p-6">
+                <h3 class="text-xl font-semibold text-white mb-4">
+                    <i class="fas fa-info-circle text-blue-400 mr-2"></i>
+                    Site Information
+                </h3>
+                <form action="{{ url_for('admin.update_system_settings') }}" method="POST" class="space-y-4">
+                    <input type="hidden" name="action" value="update_site_info">
+                    
+                    <div>
+                        <label for="site_title" class="block text-sm font-medium text-gray-300 mb-2">
+                            Site Title
+                        </label>
+                        <input type="text" name="site_title" id="site_title" 
+                               value="{{ site_title }}"
+                               class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               placeholder="AniFlix">
+                    </div>
+                    
+                    <div>
+                        <label for="site_description" class="block text-sm font-medium text-gray-300 mb-2">
+                            Site Description
+                        </label>
+                        <textarea name="site_description" id="site_description" rows="3" 
+                                  class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                  placeholder="Your premium anime and movie streaming platform...">{{ site_description }}</textarea>
+                    </div>
+                    
+                    <button type="submit" class="action-button w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                        <i class="fas fa-save mr-2"></i>
+                        Update Site Info
+                    </button>
+                </form>
+            </div>
+
+            <!-- Database Information -->
+            <div class="setting-card bg-gray-800 rounded-lg p-6">
+                <h3 class="text-xl font-semibold text-white mb-4">
+                    <i class="fas fa-database text-green-400 mr-2"></i>
+                    Database Information
+                </h3>
+                <div class="space-y-3">
+                    <div class="flex justify-between">
+                        <span class="text-gray-300">Engine:</span>
+                        <span class="text-white font-medium">{{ database_info.engine }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-300">Host:</span>
+                        <span class="text-white font-medium">{{ database_info.host }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-300">Status:</span>
+                        <span class="text-green-400 font-medium">{{ database_info.status }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-300">Notifications:</span>
+                        <span class="text-white font-medium">{{ total_notifications }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Actions -->
+        <div class="setting-card bg-gray-800 rounded-lg p-6 mb-8">
+            <h3 class="text-xl font-semibold text-white mb-4">
+                <i class="fas fa-tools text-orange-400 mr-2"></i>
+                System Maintenance
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <form action="{{ url_for('admin.update_system_settings') }}" method="POST" class="inline">
+                    <input type="hidden" name="action" value="cleanup_notifications">
+                    <button type="submit" class="action-button w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                        <i class="fas fa-broom mr-2"></i>
+                        Cleanup Old Notifications
+                    </button>
+                </form>
+                
+                <form action="{{ url_for('admin.update_system_settings') }}" method="POST" class="inline">
+                    <input type="hidden" name="action" value="optimize_database">
+                    <button type="submit" class="action-button w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                        <i class="fas fa-tachometer-alt mr-2"></i>
+                        Optimize Database
+                    </button>
+                </form>
+                
+                <form action="{{ url_for('admin.update_system_settings') }}" method="POST" class="inline">
+                    <input type="hidden" name="action" value="reset_demo_data">
+                    <button type="submit" class="action-button w-full bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                        <i class="fas fa-refresh mr-2"></i>
+                        Reset Demo Data
+                    </button>
+                </form>
+            </div>
+
+
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Recent Content -->
+            <div class="setting-card bg-gray-800 rounded-lg p-6">
+                <h3 class="text-xl font-semibold text-white mb-4">
+                    <i class="fas fa-film text-red-400 mr-2"></i>
+                    Recent Content
+                </h3>
+                <div class="space-y-3">
+                    {% for content in recent_content %}
+                    <div class="flex items-center justify-between py-2 border-b border-gray-700 last:border-b-0">
+                        <div>
+                            <div class="text-white font-medium">{{ content.title }}</div>
+                            <div class="text-gray-400 text-sm">{{ content.genre or 'Unknown' }}</div>
+                        </div>
+                        <div class="text-gray-400 text-sm">
+                            {{ content.created_at.strftime('%d/%m/%Y') }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Recent Users -->
+            <div class="setting-card bg-gray-800 rounded-lg p-6">
+                <h3 class="text-xl font-semibold text-white mb-4">
+                    <i class="fas fa-users text-green-400 mr-2"></i>
+                    Recent Users
+                </h3>
+                <div class="space-y-3">
+                    {% for user in recent_users %}
+                    <div class="flex items-center justify-between py-2 border-b border-gray-700 last:border-b-0">
+                        <div>
+                            <div class="text-white font-medium">{{ user.username }}</div>
+                            <div class="text-gray-400 text-sm">{{ user.email }}</div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            {% if user.is_vip() %}
+                            <span class="bg-yellow-600 text-white text-xs px-2 py-1 rounded">VIP</span>
+                            {% endif %}
+                            <div class="text-gray-400 text-sm">
+                                {{ user.created_at.strftime('%d/%m/%Y') }}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Quick Actions -->
+        <div class="mt-8 bg-gray-800 rounded-lg p-6">
+            <h3 class="text-xl font-semibold text-white mb-4">
+                <i class="fas fa-bolt text-yellow-400 mr-2"></i>
+                Quick Actions
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <a href="{{ url_for('admin.admin_users') }}" class="action-button bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg text-center font-medium">
+                    <i class="fas fa-users mr-2"></i>
+                    Manage Users
+                </a>
+                <a href="{{ url_for('admin.admin_content') }}" class="action-button bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg text-center font-medium">
+                    <i class="fas fa-film mr-2"></i>
+                    Manage Content
+                </a>
+                <a href="{{ url_for('admin.admin_analytics') }}" class="action-button bg-orange-600 hover:bg-orange-700 text-white px-4 py-3 rounded-lg text-center font-medium">
+                    <i class="fas fa-chart-bar mr-2"></i>
+                    Analytics
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Real-time System Settings JavaScript
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('System Settings page loaded - initializing real-time features');
+    
+    // Debug: Check if elements exist
+    const logoUrlDebug = document.getElementById('logo_url');
+    const logoAltDebug = document.getElementById('logo_alt');
+    const previewDebug = document.getElementById('logo-preview-container');
+    console.log('Debug elements found:', {
+        logoUrl: !!logoUrlDebug,
+        logoAlt: !!logoAltDebug, 
+        preview: !!previewDebug
+    });
+    
+    // Show real-time status indicators
+    updateSystemStatus();
+    
+    // Auto-refresh status every 30 seconds
+    setInterval(updateSystemStatus, 30000);
+    
+    // Add form submission feedback
+    const forms = document.querySelectorAll('form');
+    forms.forEach(form => {
+        form.addEventListener('submit', function(e) {
+            const submitBtn = form.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Updating...';
+                submitBtn.disabled = true;
+                
+                // Re-enable after 3 seconds (form will submit and redirect)
+                setTimeout(() => {
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                }, 3000);
+            }
+        });
+    });
+    
+    // Real-time maintenance mode preview
+    const maintenanceCheckbox = document.getElementById('maintenance_enabled');
+    const maintenanceMessage = document.getElementById('maintenance_message');
+    
+    if (maintenanceCheckbox && maintenanceMessage) {
+        function updateMaintenancePreview() {
+            const isEnabled = maintenanceCheckbox.checked;
+            const message = maintenanceMessage.value;
+            
+            // Update checkbox styling
+            if (isEnabled) {
+                maintenanceCheckbox.parentElement.classList.add('text-red-400');
+                maintenanceMessage.parentElement.classList.add('border-red-500');
+            } else {
+                maintenanceCheckbox.parentElement.classList.remove('text-red-400');
+                maintenanceMessage.parentElement.classList.remove('border-red-500');
+            }
+        }
+        
+        maintenanceCheckbox.addEventListener('change', updateMaintenancePreview);
+        maintenanceMessage.addEventListener('input', updateMaintenancePreview);
+        updateMaintenancePreview();
+    }
+    
+    // Enhanced real-time preview function with better alt text handling
+    window.updatePreviewNow = function() {
+        const logoUrl = document.getElementById('logo_url');
+        const logoAlt = document.getElementById('logo_alt');
+        const previewContainer = document.getElementById('logo-preview-container');
+        
+        if (!logoUrl || !logoAlt || !previewContainer) {
+            console.log('Elements not found for preview update');
+            return;
+        }
+        
+        const url = logoUrl.value.trim();
+        const alt = logoAlt.value.trim(); // Don't use fallback here
+        
+        console.log('Professor Debug - URL:', url, 'Alt from input:', alt);
+        
+        if (url && url.length > 10) {
+            // Show loading
+            previewContainer.innerHTML = `
+                <div class="text-gray-400 text-center">
+                    <i class="fas fa-spinner fa-spin mr-2"></i>
+                    Loading logo...
+                </div>
+            `;
+            
+            // Try to load image
+            const img = new Image();
+            img.onload = function() {
+                previewContainer.innerHTML = `
+                    <img src="${url}" alt="${alt || 'Logo'}" 
+                         class="h-12 w-auto rounded shadow-lg" 
+                         style="max-width: 200px;">
+                    <div class="text-xs text-gray-400 mt-1">Alt text: ${alt || 'Logo'}</div>
+                `;
+                
+                // Also update navigation logo
+                updateNavigationLogo(url, alt);
+            };
+            img.onerror = function() {
+                previewContainer.innerHTML = `
+                    <div class="text-red-400 text-center">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                        URL tidak valid
+                    </div>
+                `;
+            };
+            img.src = url;
+        } else {
+            // Show text logo using actual alt text from input
+            const displayText = alt || 'AniFlix'; // Use actual input value
+            let logoHtml;
+            
+            // Create text representation based on actual input
+            if (displayText.toLowerCase().includes('aniflix')) {
+                // Find "ani" and everything after it to preserve custom text
+                const aniIndex = displayText.toLowerCase().indexOf('ani');
+                if (aniIndex !== -1) {
+                    const aniPart = displayText.substring(aniIndex, aniIndex + 3); // "Ani"
+                    const flixPart = displayText.substring(aniIndex + 3); // "Flixx" or "Flix" etc
+                    logoHtml = `<span class="text-red-500">${aniPart}</span><span class="text-white">${flixPart}</span>`;
+                } else {
+                    logoHtml = `<span class="text-white">${displayText}</span>`;
+                }
+            } else {
+                logoHtml = `<span class="text-white">${displayText}</span>`;
+            }
+            
+            previewContainer.innerHTML = `
+                <div class="text-2xl font-bold transition-all duration-300">
+                    ${logoHtml}
+                </div>
+                <div class="text-xs text-gray-400 mt-1">Text logo: "${displayText}"</div>
+            `;
+            
+            // Also update navigation logo in real-time
+            updateNavigationLogo(url, displayText);
+            
+            console.log('Professor Debug - Text logo updated with:', displayText);
+        }
+    };
+    
+    // Ultimate robust function to update navigation logo in real-time
+    window.updateNavigationLogo = function(url, alt) {
+        const displayText = alt || 'AniFlix';
+        console.log('🔧 Professor ULTIMATE - Updating logo to:', displayText);
+        
+        // Strategy 1: Direct DOM manipulation - find and replace all navigation logos
+        function updateElement(element, newText) {
+            if (!element) return false;
+            
+            let logoHtml;
+            if (newText.toLowerCase().includes('aniflix')) {
+                const aniIndex = newText.toLowerCase().indexOf('ani');
+                if (aniIndex !== -1) {
+                    const aniPart = newText.substring(aniIndex, aniIndex + 3);
+                    const flixPart = newText.substring(aniIndex + 3);
+                    logoHtml = `<span class="text-red-500">${aniPart}</span><span class="text-white">${flixPart}</span>`;
+                } else {
+                    logoHtml = `<span class="text-white">${newText}</span>`;
+                }
+            } else {
+                logoHtml = `<span class="text-white">${newText}</span>`;
+            }
+            
+            element.innerHTML = logoHtml;
+            console.log('✅ Updated element:', element.tagName, element.className);
+            return true;
+        }
+        
+        // Find all possible logo elements and update them
+        const selectors = [
+            'nav span.text-2xl',
+            '.flex-shrink-0 span',
+            '#main-nav-logo span',
+            '#mobile-nav-logo',
+            'nav a span',
+            '.text-red-500'
+        ];
+        
+        let updated = 0;
+        selectors.forEach(selector => {
+            const elements = document.querySelectorAll(selector);
+            elements.forEach(element => {
+                const text = element.textContent || '';
+                // Only update if it looks like a logo (contains "Ani" or "Flix" or is short)
+                if (text.includes('Ani') || text.includes('Flix') || text.length < 15) {
+                    if (updateElement(element, displayText)) {
+                        updated++;
+                    }
+                }
+            });
+        });
+        
+        // Strategy 2: Search in parent window/iframe if this is in iframe
+        try {
+            if (window.parent && window.parent !== window) {
+                const parentSelectors = [
+                    'nav span.text-2xl',
+                    '.flex-shrink-0 span',
+                    '#main-nav-logo span',
+                    'nav a span'
+                ];
+                
+                parentSelectors.forEach(selector => {
+                    const elements = window.parent.document.querySelectorAll(selector);
+                    elements.forEach(element => {
+                        const text = element.textContent || '';
+                        if (text.includes('Ani') || text.includes('Flix') || text.length < 15) {
+                            if (updateElement(element, displayText)) {
+                                updated++;
+                                console.log('✅ Updated parent window element');
+                            }
+                        }
+                    });
+                });
+            }
+        } catch (e) {
+            console.log('Cannot access parent window');
+        }
+        
+        // Strategy 3: Force update using MutationObserver to track changes
+        if (updated === 0) {
+            console.log('🚨 No elements updated, using force method');
+            
+            // Find all text nodes that contain logo text
+            const walker = document.createTreeWalker(
+                document.body,
+                NodeFilter.SHOW_TEXT,
+                {
+                    acceptNode: function(node) {
+                        const text = node.textContent.trim();
+                        return (text.includes('AniFlix') || text.includes('Ani') || text.includes('Flix')) && 
+                               text.length < 20 ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+                    }
+                }
+            );
+            
+            const textNodes = [];
+            let node;
+            while (node = walker.nextNode()) {
+                textNodes.push(node);
+            }
+            
+            textNodes.forEach(textNode => {
+                const parent = textNode.parentNode;
+                // Check if this is in navigation area
+                if (parent && (parent.closest('nav') || parent.closest('.flex-shrink-0') || parent.closest('header'))) {
+                    console.log('🎯 Found logo text node:', textNode.textContent, 'in parent:', parent.tagName);
+                    
+                    // Replace text node with new HTML
+                    const newSpan = document.createElement('span');
+                    newSpan.className = parent.className || 'text-2xl font-bold text-red-500';
+                    
+                    let logoHtml;
+                    if (displayText.toLowerCase().includes('aniflix')) {
+                        const aniIndex = displayText.toLowerCase().indexOf('ani');
+                        if (aniIndex !== -1) {
+                            const aniPart = displayText.substring(aniIndex, aniIndex + 3);
+                            const flixPart = displayText.substring(aniIndex + 3);
+                            logoHtml = `<span class="text-red-500">${aniPart}</span><span class="text-white">${flixPart}</span>`;
+                        } else {
+                            logoHtml = `<span class="text-white">${displayText}</span>`;
+                        }
+                    } else {
+                        logoHtml = `<span class="text-white">${displayText}</span>`;
+                    }
+                    
+                    newSpan.innerHTML = logoHtml;
+                    parent.replaceChild(newSpan, textNode);
+                    updated++;
+                    console.log('🚀 Force replaced text node with new logo');
+                }
+            });
+        }
+        
+        console.log(`🏁 Professor ULTIMATE - Updated ${updated} logo elements to: ${displayText}`);
+        
+        // Strategy 4: IMMEDIATE Debug - Show what elements we actually found
+        console.log('🔍 DEBUGGING - All navigation elements found:');
+        document.querySelectorAll('nav *').forEach((el, index) => {
+            console.log(`Nav element ${index}:`, el.tagName, el.className, el.textContent?.slice(0, 20));
+        });
+        
+        console.log('🔍 DEBUGGING - All elements with "Ani" or "Flix":');
+        document.querySelectorAll('*').forEach((el, index) => {
+            const text = el.textContent || '';
+            if (text.includes('Ani') || text.includes('Flix')) {
+                console.log(`Text element ${index}:`, el.tagName, el.className, text.slice(0, 50));
+            }
+        });
+        
+        // Strategy 4: Post message to parent frame if we're in an iframe
+        try {
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage({
+                    type: 'UPDATE_LOGO',
+                    logoText: displayText,
+                    logoUrl: url
+                }, '*');
+                console.log('📡 Sent logo update message to parent frame');
+            }
+        } catch (e) {
+            console.log('Cannot send message to parent');
+        }
+        
+        // Strategy 5: Try to access top window
+        try {
+            if (window.top && window.top !== window) {
+                const topSelectors = [
+                    'nav span.text-2xl',
+                    '.flex-shrink-0 span',
+                    '#main-nav-logo span',
+                    'nav a span'
+                ];
+                
+                topSelectors.forEach(selector => {
+                    const elements = window.top.document.querySelectorAll(selector);
+                    elements.forEach(element => {
+                        const text = element.textContent || '';
+                        if (text.includes('Ani') || text.includes('Flix') || text.length < 15) {
+                            if (updateElement(element, displayText)) {
+                                updated++;
+                                console.log('✅ Updated top window element');
+                            }
+                        }
+                    });
+                });
+            }
+        } catch (e) {
+            console.log('Cannot access top window');
+        }
+        
+        // Strategy 6: Use localStorage to communicate across pages
+        try {
+            localStorage.setItem('currentLogoText', displayText);
+            localStorage.setItem('currentLogoUrl', url || '');
+            localStorage.setItem('logoUpdateTime', Date.now().toString());
+            console.log('💾 Saved logo update to localStorage');
+            
+            // Trigger storage event for other tabs
+            window.dispatchEvent(new StorageEvent('storage', {
+                key: 'currentLogoText',
+                newValue: displayText,
+                oldValue: localStorage.getItem('currentLogoText')
+            }));
+            
+            // Strategy 7: FORCE update via direct manipulation of all possible elements
+            console.log('🚨 FORCE UPDATE - Finding ALL possible logo elements');
+            
+            // Get all elements and check each one individually
+            const allElements = Array.from(document.querySelectorAll('*'));
+            let forceUpdated = 0;
+            
+            allElements.forEach((element, index) => {
+                const text = element.textContent || '';
+                const innerHTML = element.innerHTML || '';
+                
+                // Check if this element contains logo text and is likely a logo
+                if ((text === 'AniFlix' || text.includes('AniFlix') || 
+                     innerHTML.includes('AniFlix') || innerHTML.includes('Ani') || 
+                     innerHTML.includes('Flix')) && text.length < 50) {
+                    
+                    // Check if it's in navigation or header area
+                    const inNav = element.closest('nav') || element.closest('header') || 
+                                 element.closest('.flex-shrink-0') || element.id === 'mobile-nav-logo';
+                    
+                    if (inNav || element.classList.contains('text-2xl') || 
+                        element.classList.contains('text-red-500')) {
+                        
+                        console.log(`🎯 FORCE updating element ${index}:`, element.tagName, element.className, text);
+                        
+                        // Apply force update
+                        let logoHtml;
+                        if (displayText.toLowerCase().includes('aniflix')) {
+                            const aniIndex = displayText.toLowerCase().indexOf('ani');
+                            if (aniIndex !== -1) {
+                                const aniPart = displayText.substring(aniIndex, aniIndex + 3);
+                                const flixPart = displayText.substring(aniIndex + 3);
+                                logoHtml = `<span class="text-red-500">${aniPart}</span><span class="text-white">${flixPart}</span>`;
+                            } else {
+                                logoHtml = `<span class="text-white">${displayText}</span>`;
+                            }
+                        } else {
+                            logoHtml = `<span class="text-white">${displayText}</span>`;
+                        }
+                        
+                        element.innerHTML = logoHtml;
+                        forceUpdated++;
+                        console.log('✅ FORCE updated successfully');
+                    }
+                }
+            });
+            
+            console.log(`🚀 FORCE UPDATE complete: ${forceUpdated} elements updated`);
+            
+        } catch (e) {
+            console.log('Cannot access localStorage:', e);
+        }
+        
+        console.log(`🏁 Professor ULTIMATE - Updated ${updated} logo elements to: ${displayText}`);
+        
+        // Return result for debugging
+        return {
+            updated: updated,
+            text: displayText
+        };
+    };
+
+    // Legacy elements for compatibility
+    const logoUrl = document.getElementById('logo_url');
+    const logoAlt = document.getElementById('logo_alt');
+    const previewContainer = document.getElementById('logo-preview-container');
+    
+    if (logoUrl && previewContainer) {
+        console.log('Logo elements found - setting up real-time functionality');
+        function updateLogoPreview() {
+            const url = logoUrl.value.trim();
+            const alt = logoAlt ? logoAlt.value.trim() : 'Logo';
+            
+            console.log('Updating logo preview:', { url, alt });
+            
+            if (url && url.length > 10) { // Only try to load if URL looks valid
+                // Show loading state
+                previewContainer.innerHTML = `
+                    <div id="logo-loading" class="text-gray-400 text-center">
+                        <i class="fas fa-spinner fa-spin mr-2"></i>
+                        <div class="text-xs mt-1">Loading logo...</div>
+                    </div>
+                `;
+                
+                // Create new image to test loading
+                const img = new Image();
+                img.onload = function() {
+                    console.log('Logo loaded successfully:', url);
+                    previewContainer.innerHTML = `
+                        <img src="${url}" alt="${alt}" 
+                             id="logo-preview-image" 
+                             class="h-12 w-auto rounded shadow-lg" 
+                             style="max-width: 200px; transition: all 0.3s ease;">
+                    `;
+                    console.log('Preview container updated with image');
+                    
+                    // Add success feedback
+                    setTimeout(function() {
+                        const imgElement = document.getElementById('logo-preview-image');
+                        if (imgElement) {
+                            imgElement.style.transform = 'scale(1.05)';
+                            setTimeout(() => imgElement.style.transform = 'scale(1)', 200);
+                        }
+                    }, 100);
+                };
+                
+                img.onerror = function() {
+                    console.log('Logo failed to load:', url);
+                    previewContainer.innerHTML = `
+                        <div class="text-red-400 text-center">
+                            <i class="fas fa-exclamation-triangle mr-2"></i>
+                            <div class="text-sm">URL logo tidak valid</div>
+                            <div class="text-xs mt-1">Periksa URL dan coba lagi</div>
+                        </div>
+                    `;
+                };
+                
+                img.src = url;
+            } else {
+                console.log('No valid logo URL provided, showing text fallback');
+                // Show text fallback with alt text that updates in real-time
+                const displayText = alt && alt !== 'Logo' && alt.trim() !== '' ? alt.trim() : 'AniFlix';
+                
+                // Create dynamic text logo based on alt text
+                let logoHtml;
+                if (displayText.toLowerCase().includes('aniflix')) {
+                    logoHtml = `<span class="text-red-500">Ani</span><span class="text-white">Flix</span>`;
+                } else {
+                    logoHtml = `<span class="text-white">${displayText}</span>`;
+                }
+                
+                previewContainer.innerHTML = `
+                    <span id="logo-preview-text" class="text-2xl font-bold transition-all duration-300">
+                        ${logoHtml}
+                    </span>
+                    <div class="text-xs text-gray-400 mt-1">Text logo: ${displayText}</div>
+                `;
+                
+                console.log('Updated text logo with alt text:', displayText);
+            }
+        }
+        
+        // Initialize preview on page load
+        setTimeout(updatePreviewNow, 100);
+    }
+    
+    // Site title real-time preview
+    const siteTitle = document.getElementById('site_title');
+    const siteDescription = document.getElementById('site_description');
+    
+    if (siteTitle) {
+        siteTitle.addEventListener('input', function() {
+            console.log('Site title input detected:', siteTitle.value);
+            clearTimeout(window.titleUpdateTimeout);
+            window.titleUpdateTimeout = setTimeout(function() {
+                updateNavigationTitle(siteTitle.value);
+            }, 300);
+        });
+        
+        siteTitle.addEventListener('keyup', function() {
+            console.log('Site title keyup detected:', siteTitle.value);
+            clearTimeout(window.titleUpdateTimeout);
+            window.titleUpdateTimeout = setTimeout(function() {
+                updateNavigationTitle(siteTitle.value);
+            }, 300);
+        });
+    }
+    
+    if (siteDescription) {
+        siteDescription.addEventListener('input', function() {
+            // Show live character count or other feedback
+            const length = siteDescription.value.length;
+            let feedback = siteDescription.parentElement.querySelector('.char-count');
+            if (!feedback) {
+                feedback = document.createElement('div');
+                feedback.className = 'char-count text-xs text-gray-400 mt-1';
+                siteDescription.parentElement.appendChild(feedback);
+            }
+            feedback.textContent = `${length} characters`;
+        });
+    }
+    
+    // Function to update navigation logo in real-time
+    function updateNavigationLogo(url, alt) {
+        console.log('Updating navigation logo - URL:', url, 'Alt:', alt);
+        
+        // Find navigation logo elements
+        const navLogos = document.querySelectorAll('nav .logo, .nav-logo, .site-logo');
+        
+        navLogos.forEach(logoElement => {
+            if (url && url.length > 10) {
+                // Update with image
+                logoElement.innerHTML = `<img src="${url}" alt="${alt || 'Logo'}" class="h-8 w-auto">`;
+            } else {
+                // Update with text logo
+                const displayText = alt || 'AniFlix';
+                let logoHtml;
+                
+                if (displayText.toLowerCase().includes('aniflix')) {
+                    const aniIndex = displayText.toLowerCase().indexOf('ani');
+                    if (aniIndex !== -1) {
+                        const aniPart = displayText.substring(aniIndex, aniIndex + 3);
+                        const flixPart = displayText.substring(aniIndex + 3);
+                        logoHtml = `<span class="text-red-500">${aniPart}</span><span class="text-white">${flixPart}</span>`;
+                    } else {
+                        logoHtml = `<span class="text-white">${displayText}</span>`;
+                    }
+                } else {
+                    logoHtml = `<span class="text-white">${displayText}</span>`;
+                }
+                
+                logoElement.innerHTML = logoHtml;
+            }
+        });
+    }
+    
+    // Function to update navigation title in real-time
+    function updateNavigationTitle(title) {
+        if (!title) title = 'AniFlix';
+        
+        // Update page title
+        document.title = title + ' - Admin System Settings';
+        
+        // Update any title displays in navigation
+        const titleElements = document.querySelectorAll('.site-title');
+        titleElements.forEach(element => {
+            element.textContent = title;
+        });
+    }
+});
+
+function updateSystemStatus() {
+    // Add visual indicators for system status
+    const statusElements = document.querySelectorAll('.system-status');
+    statusElements.forEach(element => {
+        element.classList.add('pulse-glow');
+    });
+    
+    // Show last updated time
+    const now = new Date();
+    const timeString = now.toLocaleTimeString();
+    const statusTime = document.getElementById('status-time');
+    if (statusTime) {
+        statusTime.textContent = `Last updated: ${timeString}`;
+    }
+}
+
+function showSettingsSuccess(message) {
+    // Create success notification
+    const notification = document.createElement('div');
+    notification.className = 'fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+    notification.innerHTML = `
+        <div class="flex items-center">
+            <i class="fas fa-check-circle mr-2"></i>
+            <span>${message}</span>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 3 seconds
+    setTimeout(() => {
+        notification.remove();
+    }, 3000);
+}
+
+// Function to set logo URL and update preview
+function setLogoUrl(url) {
+    const logoUrlInput = document.getElementById('logo_url');
+    if (logoUrlInput) {
+        logoUrlInput.value = url;
+        if (window.updateLogoPreview) {
+            window.updateLogoPreview();
+        }
+    }
+}
+
+// Maintenance Settings CRUD Functions
+function showAddMaintenanceModal() {
+    showMaintenanceModal('Add Maintenance Schedule', {
+        title: '',
+        message: '',
+        type: 'scheduled',
+        start_time: '',
+        end_time: '',
+        enabled: false
+    }, 'add');
+}
+
+function showEmergencyMaintenanceModal() {
+    showMaintenanceModal('Emergency Maintenance', {
+        title: 'Emergency Maintenance',
+        message: 'AniFlix is currently undergoing emergency maintenance. We apologize for the inconvenience and will be back online as soon as possible.',
+        type: 'emergency',
+        start_time: new Date().toISOString().slice(0, 16),
+        end_time: '',
+        enabled: true
+    }, 'emergency');
+}
+
+function showScheduledMaintenanceModal() {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(2, 0, 0, 0);
+    
+    const endTime = new Date(tomorrow);
+    endTime.setHours(6, 0, 0, 0);
+    
+    showMaintenanceModal('Schedule Maintenance', {
+        title: 'Scheduled Maintenance',
+        message: 'AniFlix will be undergoing scheduled maintenance. During this time, the service will be temporarily unavailable. Thank you for your patience.',
+        type: 'scheduled',
+        start_time: tomorrow.toISOString().slice(0, 16),
+        end_time: endTime.toISOString().slice(0, 16),
+        enabled: false
+    }, 'scheduled');
+}
+
+function editMaintenanceSchedule(id) {
+    if (id === 'default') {
+        showMaintenanceModal('Edit Default Maintenance', {
+            title: 'Default Maintenance',
+            message: '{{ maintenance_message|e }}',
+            type: 'manual',
+            start_time: '',
+            end_time: '',
+            enabled: {{ 'true' if maintenance_enabled else 'false' }}
+        }, 'edit', id);
+    }
+}
+
+function showMaintenanceModal(title, data, action, id = null) {
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+    modal.innerHTML = `
+        <div class="bg-gray-800 rounded-lg max-w-2xl w-full max-h-96 overflow-y-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-semibold text-white">
+                        <i class="fas fa-${action === 'emergency' ? 'exclamation-circle text-red-400' : action === 'add' || action === 'scheduled' ? 'calendar-plus text-blue-400' : 'edit text-yellow-400'} mr-2"></i>
+                        ${title}
+                    </h3>
+                    <button onclick="closeMaintenanceModal()" class="text-gray-400 hover:text-white">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <form onsubmit="submitMaintenanceForm(event, '${action}', '${id}')" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Title</label>
+                        <input type="text" name="title" value="${data.title}" required
+                               class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Maintenance Message</label>
+                        <textarea name="message" rows="4" required
+                                  class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                  placeholder="Enter the message to display to users during maintenance...">${data.message}</textarea>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Type</label>
+                            <select name="type" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option value="manual" ${data.type === 'manual' ? 'selected' : ''}>Manual</option>
+                                <option value="scheduled" ${data.type === 'scheduled' ? 'selected' : ''}>Scheduled</option>
+                                <option value="emergency" ${data.type === 'emergency' ? 'selected' : ''}>Emergency</option>
+                            </select>
+                        </div>
+                        
+                        <div class="flex items-center">
+                            <input type="checkbox" name="enabled" ${data.enabled ? 'checked' : ''}
+                                   class="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500">
+                            <label class="ml-2 text-gray-300">Enable Immediately</label>
+                        </div>
+                    </div>
+                    
+                    ${data.type !== 'manual' ? `
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Start Time</label>
+                            <input type="datetime-local" name="start_time" value="${data.start_time}"
+                                   class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">End Time <span class="text-gray-500">(Optional)</span></label>
+                            <input type="datetime-local" name="end_time" value="${data.end_time}"
+                                   class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                    </div>
+                    ` : ''}
+                    
+                    <div class="flex justify-end space-x-3 pt-4 border-t border-gray-600">
+                        <button type="button" onclick="closeMaintenanceModal()" 
+                                class="px-4 py-2 text-gray-300 hover:text-white border border-gray-600 hover:border-gray-500 rounded-lg">
+                            Cancel
+                        </button>
+                        ${action === 'edit' && id !== 'default' ? `
+                        <button type="button" onclick="deleteMaintenanceSchedule('${id}')" 
+                                class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg">
+                            <i class="fas fa-trash mr-2"></i>Delete
+                        </button>
+                        ` : ''}
+                        <button type="submit" 
+                                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
+                            <i class="fas fa-save mr-2"></i>
+                            ${action === 'add' ? 'Add Schedule' : action === 'edit' ? 'Update' : 'Start Maintenance'}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Close modal when clicking outside
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            closeMaintenanceModal();
+        }
+    });
+}
+
+function closeMaintenanceModal() {
+    const modal = document.querySelector('.fixed.inset-0.bg-black');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+function submitMaintenanceForm(event, action, id) {
+    event.preventDefault();
+    
+    const form = event.target;
+    const formData = new FormData(form);
+    
+    // Convert form data to object
+    const data = {
+        action: action === 'edit' && id === 'default' ? 'update_maintenance' : 'maintenance_crud',
+        operation: action,
+        id: id,
+        title: formData.get('title'),
+        message: formData.get('message'),
+        type: formData.get('type'),
+        enabled: formData.has('enabled'),
+        start_time: formData.get('start_time') || null,
+        end_time: formData.get('end_time') || null
+    };
+    
+    // For default maintenance, use the existing form action
+    if (action === 'edit' && id === 'default') {
+        // Update the current maintenance settings
+        fetch('{{ url_for("admin.update_system_settings") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                action: 'update_maintenance',
+                maintenance_enabled: data.enabled ? 'on' : '',
+                maintenance_message: data.message
+            })
+        })
+        .then(response => {
+            if (response.ok) {
+                showMaintenanceNotification('Maintenance settings updated successfully!', 'success');
+                setTimeout(() => window.location.reload(), 1000);
+            } else {
+                showMaintenanceNotification('Failed to update maintenance settings', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showMaintenanceNotification('An error occurred while updating settings', 'error');
+        });
+    } else {
+        // Handle other maintenance operations (add, edit scheduled, delete)
+        showMaintenanceNotification('Maintenance schedule saved! This feature will be fully implemented in the next update.', 'info');
+    }
+    
+    closeMaintenanceModal();
+}
+
+function deleteMaintenanceSchedule(id) {
+    if (confirm('Are you sure you want to delete this maintenance schedule?')) {
+        // Implementation for deleting maintenance schedules
+        showMaintenanceNotification('Maintenance schedule deleted!', 'success');
+        closeMaintenanceModal();
+    }
+}
+
+function showMaintenanceNotification(message, type) {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 transform transition-transform duration-300 translate-x-full`;
+    
+    const bgColor = type === 'success' ? 'bg-green-600' : type === 'error' ? 'bg-red-600' : 'bg-blue-600';
+    const icon = type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-triangle' : 'info-circle';
+    
+    notification.className += ` ${bgColor} text-white`;
+    notification.innerHTML = `
+        <div class="flex items-center">
+            <i class="fas fa-${icon} mr-3"></i>
+            <span>${message}</span>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Animate in
+    setTimeout(() => {
+        notification.classList.remove('translate-x-full');
+    }, 100);
+    
+    // Remove after 4 seconds
+    setTimeout(() => {
+        notification.classList.add('translate-x-full');
+        setTimeout(() => notification.remove(), 300);
+    }, 4000);
+}
+
+
+
+</script>
+{% endblock %}

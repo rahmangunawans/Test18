@@ -1,0 +1,255 @@
+{% extends "responsive_base.html" %}
+
+{% block title %}{% if episode %}Edit Episode{% else %}Add Episode{% endif %} - {{ content.title }}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-900 pt-32 pb-8">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <div class="flex items-center mb-4">
+                <a href="{{ url_for('admin.manage_episodes', content_id=content.id) }}" class="text-red-500 hover:text-red-400 mr-4">
+                    <i class="fas fa-arrow-left text-lg"></i>
+                </a>
+                <h1 class="text-3xl font-bold text-white">
+                    {% if episode %}Edit Episode{% else %}Add Episode{% endif %}
+                </h1>
+            </div>
+            <p class="text-gray-400">{{ content.title }}</p>
+        </div>
+
+        <!-- Form -->
+        <div class="bg-gray-800 rounded-lg p-6">
+            <form method="POST" class="space-y-6">
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Episode Number</label>
+                        <input type="number" name="episode_number" 
+                               value="{{ episode.episode_number if episode else '' }}"
+                               class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-red-500"
+                               required>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Duration (minutes)</label>
+                        <input type="number" name="duration" 
+                               value="{{ episode.duration if episode else '' }}"
+                               class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-red-500">
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Episode Title</label>
+                    <input type="text" name="title" 
+                           value="{{ episode.title if episode else '' }}"
+                           class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-red-500">
+                </div>
+                
+                <!-- Streaming Servers Section -->
+                <div class="col-span-full">
+                    <h3 class="text-lg font-medium text-white mb-4 border-b border-gray-600 pb-2">
+                        <i class="fas fa-server mr-2 text-red-500"></i>
+                        Streaming Servers
+                    </h3>
+                    <div class="grid gap-4">
+                        <!-- Server 1: M3U8 URL -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">
+                                <i class="fas fa-play-circle mr-1 text-green-500"></i>
+                                Server 1 - M3U8 URL
+                            </label>
+                            <input type="url" name="server_m3u8_url" 
+                                   value="{{ episode.server_m3u8_url if episode else '' }}"
+                                   class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-red-500"
+                                   placeholder="https://example.com/video.m3u8">
+                            <p class="text-xs text-gray-400 mt-1">HLS streaming format (.m3u8)</p>
+                        </div>
+                        
+                        <!-- Server 2: Embed URL -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">
+                                <i class="fas fa-code mr-1 text-blue-500"></i>
+                                Server 2 - Embed URL
+                            </label>
+                            <input type="url" name="server_embed_url" 
+                                   value="{{ episode.server_embed_url if episode else '' }}"
+                                   class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-red-500"
+                                   placeholder="https://embed.example.com/video/123">
+                            <p class="text-xs text-gray-400 mt-1">Embed iframe URL for external player</p>
+                        </div>
+                        
+                        <!-- Server 3: iQiyi Play URL -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">
+                                <i class="fas fa-tachometer-alt mr-1 text-orange-500"></i>
+                                Server 3 - iQiyi Play URL
+                            </label>
+                            <input type="url" name="iqiyi_play_url" 
+                                   value="{{ episode.iqiyi_play_url if episode and episode.iqiyi_play_url else '' }}"
+                                   class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-red-500"
+                                   placeholder="https://www.iq.com/play/super-cube-episode-1-11eihk07dr8?lang=en_us">
+                            <p class="text-xs text-gray-400 mt-1">iQiyi play URL - akan otomatis extract M3U8 saat streaming</p>
+                        </div>
+                        
+                        <!-- Legacy Video URL (for backwards compatibility) -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">
+                                <i class="fas fa-video mr-1 text-yellow-500"></i>
+                                Legacy Video URL (Optional)
+                            </label>
+                            <input type="url" name="video_url" 
+                                   value="{{ episode.video_url if episode else '' }}"
+                                   class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-red-500"
+                                   placeholder="https://example.com/video.mp4">
+                            <p class="text-xs text-gray-400 mt-1">Direct video file (fallback)</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Thumbnail URL</label>
+                    <input type="url" name="thumbnail_url" 
+                           value="{{ episode.thumbnail_url if episode else '' }}"
+                           class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-red-500"
+                           placeholder="https://example.com/thumbnail.jpg">
+                </div>
+                
+
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Description</label>
+                    <textarea name="description" rows="4"
+                              class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-red-500"
+                              placeholder="Episode description...">{{ episode.description if episode else '' }}</textarea>
+                </div>
+                
+
+
+                <div class="flex space-x-4 pt-6">
+                    <button type="submit" 
+                            class="flex-1 bg-red-600 hover:bg-red-700 text-white py-3 px-6 rounded-lg font-medium">
+                        {% if episode %}Update Episode{% else %}Add Episode{% endif %}
+                    </button>
+                    <a href="{{ url_for('admin.manage_episodes', content_id=content.id) }}" 
+                       class="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-3 px-6 rounded-lg font-medium text-center">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+
+async function extractM3U8FromDash() {
+    const dashUrl = document.getElementById('dashUrlInput').value.trim();
+    const statusDiv = document.getElementById('dashExtractionStatus');
+    const extractBtn = document.getElementById('extractDashBtn');
+    
+    if (!dashUrl) {
+        showDashStatus('Masukkan DASH URL terlebih dahulu', 'error');
+        return;
+    }
+    
+    if (!dashUrl.includes('cache.video.iqiyi.com/dash')) {
+        showDashStatus('URL harus berupa DASH URL dari iQiyi', 'error');
+        return;
+    }
+    
+    // Disable button and show loading
+    extractBtn.disabled = true;
+    extractBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Extracting...';
+    showDashStatus('Mengekstrak M3U8 dari DASH URL...', 'info');
+    
+    try {
+        const response = await fetch('/admin/api/extract-dash-m3u8', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                dash_url: dashUrl
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Auto-fill M3U8 URL field
+            const m3u8Field = document.querySelector('input[name="server_m3u8_url"]');
+            if (m3u8Field && result.m3u8_content) {
+                // Create blob URL for M3U8 content
+                const blob = new Blob([result.m3u8_content], { type: 'application/vnd.apple.mpegurl' });
+                const m3u8Url = URL.createObjectURL(blob);
+                m3u8Field.value = m3u8Url;
+                
+                showDashStatus(`✅ ${result.message} - M3U8 URL diisi otomatis`, 'success');
+                showNotification('M3U8 berhasil diekstrak dan diisi ke Server 1', 'success');
+            } else {
+                showDashStatus(`✅ ${result.message}`, 'success');
+            }
+        } else {
+            showDashStatus(`❌ Error: ${result.error}`, 'error');
+            if (result.details) {
+                showDashStatus(`💡 ${result.details}`, 'info');
+            }
+        }
+    } catch (error) {
+        showDashStatus(`❌ Network error: ${error.message}`, 'error');
+    } finally {
+        // Re-enable button
+        extractBtn.disabled = false;
+        extractBtn.innerHTML = '<i class="fas fa-magic"></i> Extract M3U8';
+    }
+}
+
+function showDashStatus(message, type) {
+    const statusDiv = document.getElementById('dashExtractionStatus');
+    const colors = {
+        'info': 'text-blue-400',
+        'success': 'text-green-400',
+        'error': 'text-red-400'
+    };
+    
+    statusDiv.className = `mt-2 text-sm ${colors[type]}`;
+    statusDiv.textContent = message;
+    statusDiv.classList.remove('hidden');
+    
+    // Auto-hide after 10 seconds for non-error messages
+    if (type !== 'error') {
+        setTimeout(() => {
+            statusDiv.classList.add('hidden');
+        }, 10000);
+    }
+}
+
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-xl text-white font-medium transition-all duration-300 transform translate-x-full ${
+        type === 'success' ? 'bg-green-500' : 
+        type === 'error' ? 'bg-red-500' : 
+        'bg-blue-500'
+    }`;
+    notification.textContent = message;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.classList.remove('translate-x-full');
+    }, 100);
+    
+    setTimeout(() => {
+        notification.classList.add('translate-x-full');
+        setTimeout(() => {
+            if (document.body.contains(notification)) {
+                document.body.removeChild(notification);
+            }
+        }, 300);
+    }, 3000);
+}
+
+</script>
+{% endblock %}

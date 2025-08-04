@@ -1,0 +1,425 @@
+{% extends "responsive_base.html" %}
+
+{% block title %}{% if content %}Edit Content{% else %}Add Content{% endif %} - Admin{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-900 pt-32 pb-8">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <div class="flex items-center mb-4">
+                <a href="{{ url_for('admin.admin_content') }}" class="text-red-500 hover:text-red-400 mr-4">
+                    <i class="fas fa-arrow-left text-lg"></i>
+                </a>
+                <h1 class="text-3xl font-bold text-white">
+                    {% if content %}Edit Content{% else %}Add New Content{% endif %}
+                </h1>
+            </div>
+            <p class="text-gray-400">{% if content %}Update content details{% else %}Add new anime, donghua, or movie{% endif %}</p>
+        </div>
+
+        <!-- Anime Data Search Section -->
+        <div class="bg-gray-800 rounded-lg p-6 mb-6">
+            <h3 class="text-xl font-semibold text-white mb-4">
+                <i class="fas fa-search mr-2"></i>Auto-Fill from Database
+            </h3>
+            <p class="text-gray-400 mb-4">Search AniList or MyAnimeList to automatically populate content details</p>
+            
+            <!-- Source Selection -->
+            <div class="flex items-center space-x-4 mb-4">
+                <label class="text-sm font-medium text-gray-300">Data Source:</label>
+                <div class="flex space-x-3">
+                    <label class="flex items-center">
+                        <input type="radio" name="search-source" value="anilist" checked 
+                               class="mr-2 text-red-600 focus:ring-red-500">
+                        <span class="text-white">AniList</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="radio" name="search-source" value="myanimelist" 
+                               class="mr-2 text-red-600 focus:ring-red-500">
+                        <span class="text-white">MyAnimeList</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="flex gap-4 mb-4">
+                <div class="flex-1">
+                    <input type="text" id="anilist-search" 
+                           placeholder="Search anime/donghua/manga..."
+                           class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-red-500">
+                </div>
+                <button type="button" id="search-anilist-btn" 
+                        class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg transition-colors">
+                    <i class="fas fa-search mr-2"></i>Search
+                </button>
+            </div>
+            
+            <!-- Search Results -->
+            <div id="anilist-results" class="hidden">
+                <h4 class="text-lg font-medium text-white mb-3">Search Results:</h4>
+                <div id="results-container" class="space-y-2 max-h-60 overflow-y-auto">
+                    <!-- Results will be populated here -->
+                </div>
+            </div>
+            
+            <!-- Loading indicator -->
+            <div id="search-loading" class="hidden text-center py-4">
+                <i class="fas fa-spinner fa-spin text-red-500 text-2xl"></i>
+                <p class="text-gray-400 mt-2">Searching database...</p>
+            </div>
+        </div>
+
+        <!-- Manual Form -->
+        <div class="bg-gray-800 rounded-lg p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-xl font-semibold text-white">
+                    <i class="fas fa-edit mr-2"></i>Content Details
+                </h3>
+                <span class="text-sm text-gray-400">Manual input or auto-filled from AniList</span>
+            </div>
+            
+            <form method="POST" class="space-y-6">
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Title</label>
+                        <input type="text" name="title" 
+                               value="{{ content.title if content else '' }}"
+                               class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-red-500"
+                               required>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Year</label>
+                        <input type="number" name="year" 
+                               value="{{ content.year if content else '' }}"
+                               class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-red-500">
+                    </div>
+                </div>
+                
+                <div class="grid md:grid-cols-3 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Genre</label>
+                        <input type="text" name="genre" 
+                               value="{{ content.genre if content else '' }}"
+                               class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-red-500"
+                               placeholder="Action, Adventure, Comedy">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Rating</label>
+                        <input type="number" name="rating" step="0.1" min="0" max="10"
+                               value="{{ content.rating if content else '' }}"
+                               class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-red-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Content Type</label>
+                        <select name="content_type" 
+                                class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-red-500">
+                            <option value="anime" {{ 'selected' if content and content.content_type == 'anime' else '' }}>Anime</option>
+                            <option value="donghua" {{ 'selected' if content and content.content_type == 'donghua' else '' }}>Donghua</option>
+                            <option value="movie" {{ 'selected' if content and content.content_type == 'movie' else '' }}>Movie</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- New fields: Studio, Total Episodes, Status -->
+                <div class="grid md:grid-cols-3 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Studio</label>
+                        <input type="text" name="studio" 
+                               value="{{ content.studio if content else '' }}"
+                               class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-red-500"
+                               placeholder="e.g. Studio Ghibli, Toei Animation">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Total Episodes</label>
+                        <input type="number" name="total_episodes" min="1"
+                               value="{{ content.total_episodes if content else '' }}"
+                               class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-red-500"
+                               placeholder="Leave empty if unknown">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Status</label>
+                        <select name="status" 
+                                class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-red-500">
+                            <option value="unknown" {{ 'selected' if content and content.status == 'unknown' else '' }}>Unknown</option>
+                            <option value="ongoing" {{ 'selected' if content and content.status == 'ongoing' else '' }}>Ongoing</option>
+                            <option value="completed" {{ 'selected' if content and content.status == 'completed' else '' }}>Completed</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Thumbnail URL</label>
+                    <input type="url" name="thumbnail_url" 
+                           value="{{ content.thumbnail_url if content else '' }}"
+                           class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-red-500"
+                           placeholder="https://example.com/poster.jpg">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Trailer URL</label>
+                    <input type="url" name="trailer_url" 
+                           value="{{ content.trailer_url if content else '' }}"
+                           class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-red-500"
+                           placeholder="https://www.youtube.com/embed/example">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Description</label>
+                    <textarea name="description" rows="4"
+                              class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-red-500"
+                              placeholder="Enter content description...">{{ content.description if content else '' }}</textarea>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Character Overview</label>
+                    <textarea name="character_overview" rows="4"
+                              class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-red-500"
+                              placeholder="Describe main characters and their roles...">{{ content.character_overview if content else '' }}</textarea>
+                </div>
+
+                <div>
+                    <label class="flex items-center">
+                        <input type="checkbox" name="is_featured" value="1"
+                               {{ 'checked' if content and content.is_featured else '' }}
+                               class="mr-2 text-red-600">
+                        <span class="text-gray-300">Featured Content</span>
+                    </label>
+                </div>
+
+                <div class="flex space-x-4 pt-6">
+                    <button type="submit" 
+                            class="flex-1 bg-red-600 hover:bg-red-700 text-white py-3 px-6 rounded-lg font-medium">
+                        {% if content %}Update Content{% else %}Add Content{% endif %}
+                    </button>
+                    <a href="{{ url_for('admin.admin_content') }}" 
+                       class="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-3 px-6 rounded-lg font-medium text-center">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- AniList Integration JavaScript -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('anilist-search');
+    const searchBtn = document.getElementById('search-anilist-btn');
+    const resultsDiv = document.getElementById('anilist-results');
+    const resultsContainer = document.getElementById('results-container');
+    const loadingDiv = document.getElementById('search-loading');
+    
+    // Form fields
+    const titleField = document.querySelector('input[name="title"]');
+    const descriptionField = document.querySelector('textarea[name="description"]');
+    const characterOverviewField = document.querySelector('textarea[name="character_overview"]');
+    const genreField = document.querySelector('input[name="genre"]');
+    const yearField = document.querySelector('input[name="year"]');
+    const ratingField = document.querySelector('input[name="rating"]');
+    const contentTypeField = document.querySelector('select[name="content_type"]');
+    const thumbnailField = document.querySelector('input[name="thumbnail_url"]');
+    const studioField = document.querySelector('input[name="studio"]');
+    const totalEpisodesField = document.querySelector('input[name="total_episodes"]');
+    const statusField = document.querySelector('select[name="status"]');
+    const trailerField = document.querySelector('input[name="trailer_url"]');
+    
+    // Get selected source
+    function getSelectedSource() {
+        const sourceRadio = document.querySelector('input[name="search-source"]:checked');
+        return sourceRadio ? sourceRadio.value : 'anilist';
+    }
+    
+    // Search function
+    function searchAniList() {
+        const query = searchInput.value.trim();
+        const source = getSelectedSource();
+        
+        if (!query || query.length < 2) {
+            if (query.length > 0 && query.length < 2) {
+                resultsContainer.innerHTML = `
+                    <div class="text-center py-4">
+                        <i class="fas fa-info-circle text-blue-500 text-2xl mb-2"></i>
+                        <p class="text-gray-400">Please enter at least 2 characters</p>
+                    </div>
+                `;
+                resultsDiv.classList.remove('hidden');
+            }
+            return;
+        }
+        
+        // Show loading
+        loadingDiv.classList.remove('hidden');
+        resultsDiv.classList.add('hidden');
+        searchBtn.disabled = true;
+        
+        // Update loading text based on source
+        const loadingText = loadingDiv.querySelector('p');
+        loadingText.textContent = `Searching ${source === 'anilist' ? 'AniList' : 'MyAnimeList'}...`;
+        
+        // Make API request
+        fetch(`/admin/api/anilist/search?q=${encodeURIComponent(query)}&source=${source}`)
+            .then(response => response.json())
+            .then(data => {
+                loadingDiv.classList.add('hidden');
+                searchBtn.disabled = false;
+                
+                if (data.success && data.results.length > 0) {
+                    displayResults(data.results, data.source);
+                } else {
+                    resultsContainer.innerHTML = `
+                        <div class="text-center py-4">
+                            <i class="fas fa-exclamation-triangle text-yellow-500 text-2xl mb-2"></i>
+                            <p class="text-gray-400">No results found for "${query}"</p>
+                            <p class="text-sm text-gray-500">Try a different search term</p>
+                        </div>
+                    `;
+                    resultsDiv.classList.remove('hidden');
+                }
+            })
+            .catch(error => {
+                console.error('Search error:', error);
+                loadingDiv.classList.add('hidden');
+                searchBtn.disabled = false;
+                resultsContainer.innerHTML = `
+                    <div class="text-center py-4">
+                        <i class="fas fa-times-circle text-red-500 text-2xl mb-2"></i>
+                        <p class="text-red-400">Search failed</p>
+                        <p class="text-sm text-gray-500">Please try again</p>
+                    </div>
+                `;
+                resultsDiv.classList.remove('hidden');
+            });
+    }
+    
+    // Display search results
+    function displayResults(results, source) {
+        resultsContainer.innerHTML = '';
+        
+        // Add source header
+        if (results.length > 0) {
+            const sourceHeader = document.createElement('div');
+            sourceHeader.className = 'mb-3 p-2 bg-gray-700 rounded-lg';
+            sourceHeader.innerHTML = `
+                <div class="flex items-center">
+                    <i class="fas fa-database text-blue-400 mr-2"></i>
+                    <span class="text-white font-medium">Results from ${source === 'anilist' ? 'AniList' : 'MyAnimeList'}</span>
+                    <span class="ml-auto text-gray-400 text-sm">${results.length} result${results.length !== 1 ? 's' : ''}</span>
+                </div>
+            `;
+            resultsContainer.appendChild(sourceHeader);
+        }
+        
+        results.forEach((anime, index) => {
+            const resultDiv = document.createElement('div');
+            resultDiv.className = 'bg-gray-700 rounded-lg p-4 cursor-pointer hover:bg-gray-600 transition-colors border-l-4 border-transparent hover:border-red-500';
+            
+            resultDiv.innerHTML = `
+                <div class="flex items-start gap-4">
+                    <img src="${anime.thumbnail_url || '/static/img/placeholder.jpg'}" 
+                         alt="${anime.title}" 
+                         class="w-16 h-20 object-cover rounded">
+                    <div class="flex-1">
+                        <h5 class="text-white font-semibold mb-1">${anime.title}</h5>
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="bg-${anime.content_type === 'anime' ? 'blue' : anime.content_type === 'donghua' ? 'green' : 'purple'}-600 text-white text-xs px-2 py-1 rounded">
+                                ${anime.content_type.toUpperCase()}
+                            </span>
+                            ${anime.year ? `<span class="text-gray-400 text-sm">${anime.year}</span>` : ''}
+                            ${anime.rating ? `<span class="text-yellow-400 text-sm">★ ${anime.rating}</span>` : ''}
+                            ${anime.trailer_url ? `<span class="text-red-400 text-xs"><i class="fas fa-play"></i> Trailer</span>` : ''}
+                            ${anime.studio ? `<span class="text-green-400 text-xs"><i class="fas fa-building"></i> ${anime.studio}</span>` : ''}
+                        </div>
+                        <p class="text-gray-300 text-sm mb-2">${anime.genre || 'No genres'}</p>
+                        <p class="text-gray-400 text-xs line-clamp-2">${anime.description ? anime.description.substring(0, 150) + '...' : 'No description'}</p>
+                        ${anime.total_episodes ? `<p class="text-blue-400 text-xs mt-1">${anime.total_episodes} episodes • ${anime.status}</p>` : ''}
+                    </div>
+                </div>
+            `;
+            
+            resultDiv.addEventListener('click', () => fillForm(anime, source));
+            resultsContainer.appendChild(resultDiv);
+        });
+        
+        resultsDiv.classList.remove('hidden');
+    }
+    
+    // Fill form with selected anime data
+    function fillForm(anime, source) {
+        if (titleField) titleField.value = anime.title || '';
+        if (descriptionField) descriptionField.value = anime.description || '';
+        if (characterOverviewField) characterOverviewField.value = anime.character_overview || '';
+        if (genreField) genreField.value = anime.genre || '';
+        if (yearField && anime.year) yearField.value = anime.year;
+        if (ratingField && anime.rating) ratingField.value = anime.rating;
+        if (contentTypeField) contentTypeField.value = anime.content_type || 'anime';
+        if (thumbnailField) thumbnailField.value = anime.thumbnail_url || '';
+        if (trailerField) trailerField.value = anime.trailer_url || '';
+        // Force studio field update with debugging
+        if (studioField) {
+            console.log('Studio field found:', studioField);
+            console.log('Studio data:', anime.studio);
+            if (anime.studio) {
+                studioField.value = anime.studio;
+                console.log('Studio field set to:', studioField.value);
+            }
+        } else {
+            console.log('Studio field not found!');
+        }
+        if (totalEpisodesField && anime.total_episodes) totalEpisodesField.value = anime.total_episodes;
+        if (statusField) statusField.value = anime.status || 'unknown';
+        
+        // Hide results and show success message
+        resultsDiv.classList.add('hidden');
+        
+        // Scroll to form
+        document.querySelector('form').scrollIntoView({ behavior: 'smooth' });
+        
+        // Show success notification
+        const sourceName = source === 'anilist' ? 'AniList' : 'MyAnimeList';
+        const notification = document.createElement('div');
+        notification.className = 'fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+        notification.innerHTML = `
+            <div class="flex items-center">
+                <i class="fas fa-check-circle mr-2"></i>
+                <span>Form auto-filled from ${sourceName}!</span>
+            </div>
+        `;
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.remove();
+        }, 3000);
+    }
+    
+    // Real-time search with debouncing
+    let searchTimeout = null;
+    function debouncedSearch() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            if (searchInput.value.trim().length >= 2) {
+                searchAniList();
+            }
+        }, 800); // Wait 800ms after user stops typing
+    }
+    
+    // Event listeners
+    searchBtn.addEventListener('click', searchAniList);
+    searchInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            clearTimeout(searchTimeout);
+            searchAniList();
+        }
+    });
+    
+    // Real-time search as user types
+    searchInput.addEventListener('input', debouncedSearch);
+});
+</script>
+{% endblock %}
