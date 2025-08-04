@@ -405,24 +405,73 @@ class EnhancedIQiyiScraper:
             return "23:00"  # Default anime episode duration
 
     def _get_duration_from_individual_page(self, episode_url: str) -> Optional[str]:
-        """Extract duration from individual episode page"""
+        """Extract duration from individual episode page - lightweight approach"""
         try:
-            print(f"🕒 Trying to get duration from individual page: {episode_url}")
+            print(f"🕒 Getting duration from individual episode: {episode_url}")
             
-            # Create a new scraper instance for the individual episode
-            individual_scraper = EnhancedIQiyiScraper(episode_url)
-            episode_info = individual_scraper.extract_single_episode()
+            # Make a lightweight request to get just the duration
+            response = self._request('get', episode_url)
+            if not response:
+                print(f"❌ Failed to fetch individual episode page")
+                return None
             
-            if episode_info and episode_info.duration and episode_info.duration != "23:00":
-                print(f"✅ Found duration from individual page: {episode_info.duration}")
-                return episode_info.duration
+            # Look for duration in the page content using faster string search
+            page_content = response.text
             
-            print(f"❌ No duration found from individual page")
+            # Look for JSON data that contains duration information
+            import re
+            
+            # Search for PT[time] ISO duration patterns
+            iso_patterns = re.findall(r'PT(\d+)M(?:(\d+)S)?', page_content)
+            if iso_patterns:
+                for match in iso_patterns:
+                    minutes = int(match[0])
+                    seconds = int(match[1]) if match[1] else 0
+                    if 5 <= minutes <= 120:  # Reasonable episode duration range
+                        duration = f"{minutes:02d}:{seconds:02d}"
+                        print(f"✅ Found ISO duration from individual page: {duration}")
+                        return duration
+            
+            # Look for explicit duration patterns like "21:30" or "0:21:30"
+            time_patterns = re.findall(r'"duration"[^}]*?"([0-9]{1,2}:[0-9]{2}(?::[0-9]{2})?)"', page_content)
+            if time_patterns:
+                for duration in time_patterns:
+                    if self._validate_duration_format(duration):
+                        print(f"✅ Found duration pattern from individual page: {duration}")
+                        return duration
+            
+            # Look for seconds-based duration
+            seconds_patterns = re.findall(r'"duration"[^}]*?:(\d{3,4})[,}]', page_content)
+            if seconds_patterns:
+                for seconds_str in seconds_patterns:
+                    seconds = int(seconds_str)
+                    if 300 <= seconds <= 7200:  # 5 minutes to 2 hours
+                        minutes = seconds // 60
+                        remaining_seconds = seconds % 60
+                        duration = f"{minutes:02d}:{remaining_seconds:02d}"
+                        print(f"✅ Found seconds-based duration from individual page: {duration}")
+                        return duration
+            
+            print(f"❌ No duration found in individual page content")
             return None
             
         except Exception as e:
             print(f"❌ Error getting duration from individual page: {e}")
             return None
+    
+    def _validate_duration_format(self, duration: str) -> bool:
+        """Validate if duration string is in reasonable format"""
+        try:
+            parts = duration.split(':')
+            if len(parts) == 2:  # MM:SS
+                minutes, seconds = int(parts[0]), int(parts[1])
+                return 5 <= minutes <= 120 and 0 <= seconds <= 59
+            elif len(parts) == 3:  # HH:MM:SS
+                hours, minutes, seconds = int(parts[0]), int(parts[1]), int(parts[2])
+                return 0 <= hours <= 3 and 0 <= minutes <= 59 and 0 <= seconds <= 59
+            return False
+        except:
+            return False
 
     def _format_iso_duration(self, iso_duration: str) -> Optional[str]:
         """Format ISO duration to readable format with enhanced PT parsing"""
@@ -702,15 +751,27 @@ class EnhancedIQiyiScraper:
                 thumbnail = self._extract_thumbnail(episode)
                 duration = self._extract_duration(episode)
                 
-                # If no duration found and we have episode URL, try to get it from individual page
-                if (not duration or duration == "23:00") and episode.get('albumPlayUrl'):
+                # Try to get duration from individual episode page for accuracy
+                if not duration and episode.get('albumPlayUrl'):
                     episode_url = episode.get('albumPlayUrl')
                     if not episode_url.startswith('http'):
                         episode_url = f"https:{episode_url}"
                     
+                    print(f"🔍 Getting individual duration for Episode {actual_episode_number}")
                     individual_duration = self._get_duration_from_individual_page(episode_url)
-                    if individual_duration:
+                    if individual_duration and individual_duration != "23:00":
                         duration = individual_duration
+                        print(f"✅ Using individual episode duration: {duration}")
+                
+                # Fallback to global duration if still no duration found
+                if not duration:
+                    fallback_duration = self._extract_duration_from_videoinfo(player_data)
+                    if fallback_duration:
+                        duration = fallback_duration
+                        print(f"⚠️ Using fallback global duration: {duration}")
+                    else:
+                        duration = "23:00"  # Default duration
+                        print(f"⚠️ Using default duration: {duration}")
                 
                 # Try to get more detailed data from videoInfo and album - prioritize album description for all episodes
                 if not description or len(description) < 50:  # If no description or description is too short
@@ -720,8 +781,7 @@ class EnhancedIQiyiScraper:
                         print(f"✅ Using detailed album description for Episode {actual_episode_number}")
                 if not thumbnail:
                     thumbnail = self._extract_thumbnail_from_videoinfo(player_data)
-                if not duration:
-                    duration = self._extract_duration_from_videoinfo(player_data)
+                # Duration is handled above with individual page extraction
                 
                 # Build episode URL
                 album_url = episode.get('albumPlayUrl', '')
