@@ -127,7 +127,7 @@
                                 {% endif %}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-white">{{ episode.duration or 'N/A' }} min</div>
+                                <div class="text-sm text-white">{{ episode.duration | format_duration }}</div>
                             </td>
                             <td class="px-6 py-4">
                                 <div class="flex flex-wrap gap-1">

@@ -425,16 +425,19 @@ class EnhancedIQiyiScraper:
             return None
 
     def _format_iso_duration(self, iso_duration: str) -> Optional[str]:
-        """Format ISO duration to readable format"""
+        """Format ISO duration to readable format with enhanced PT parsing"""
         try:
+            # Clean the input
+            iso_duration = str(iso_duration).strip()
+            
             # If it's already in time format, return as is
-            if ':' in iso_duration:
+            if ':' in iso_duration and not iso_duration.startswith('PT'):
                 return iso_duration
             
-            # If it's ISO 8601 duration format (PT1H30M45S)
+            # If it's ISO 8601 duration format (PT21M, PT1H30M45S, etc.)
             if iso_duration.startswith('PT'):
                 import re
-                # Extract hours, minutes, seconds
+                # Enhanced pattern to handle PT21M, PT1H30M, PT45S formats
                 pattern = r'PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?'
                 match = re.match(pattern, iso_duration)
                 if match:
@@ -442,11 +445,16 @@ class EnhancedIQiyiScraper:
                     minutes = int(match.group(2) or 0)
                     seconds = int(match.group(3) or 0)
                     
+                    print(f"🔍 Parsed ISO duration {iso_duration}: {hours}h {minutes}m {seconds}s")
+                    
                     # Format as HH:MM:SS or MM:SS
                     if hours > 0:
-                        return f"{hours}:{minutes:02d}:{seconds:02d}"
+                        formatted = f"{hours}:{minutes:02d}:{seconds:02d}"
                     else:
-                        return f"{minutes:02d}:{seconds:02d}"
+                        formatted = f"{minutes:02d}:{seconds:02d}"
+                    
+                    print(f"✅ Formatted ISO duration as: {formatted}")
+                    return formatted
             
             # If it's just a number (seconds)
             if iso_duration.isdigit():
@@ -460,7 +468,8 @@ class EnhancedIQiyiScraper:
                 else:
                     return f"{minutes:02d}:{remaining_seconds:02d}"
             
-            return iso_duration
+            print(f"❌ Could not parse ISO duration format: {iso_duration}")
+            return None
             
         except Exception as e:
             print(f"❌ Error formatting ISO duration: {e}")

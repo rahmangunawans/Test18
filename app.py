@@ -74,6 +74,26 @@ login_manager.init_app(app)
 login_manager.login_view = 'auth.login'  # type: ignore
 login_manager.login_message = 'Please log in to access this page.'
 
+# Add template filter for duration formatting
+@app.template_filter('format_duration')
+def format_duration(seconds):
+    """Convert seconds to MM:SS format for display"""
+    if not seconds or seconds == 0:
+        return 'N/A'
+    
+    try:
+        seconds = int(seconds)
+        hours = seconds // 3600
+        minutes = (seconds % 3600) // 60
+        remaining_seconds = seconds % 60
+        
+        if hours > 0:
+            return f"{hours}:{minutes:02d}:{remaining_seconds:02d}"
+        else:
+            return f"{minutes:02d}:{remaining_seconds:02d}"
+    except (ValueError, TypeError):
+        return 'N/A'
+
 # Add custom Jinja2 filters
 @app.template_filter('from_json')
 def from_json_filter(value):
