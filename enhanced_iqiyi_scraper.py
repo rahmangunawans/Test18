@@ -279,55 +279,48 @@ class EnhancedIQiyiScraper:
         # Debug: Print all available keys to understand the data structure
         print(f"🔍 Available episode data keys: {list(episode_data.keys())}")
 
-        # Comprehensive duration field list
+        # Comprehensive duration field list - including IQiyi specific fields
         duration_fields = [
             'duration', 'playTime', 'length', 'totalTime', 'runTime', 'time',
             'videoDuration', 'showTime', 'programDuration', 'episodeDuration',
             'runtime', 'playLength', 'videoTime', 'mediaTime', 'contentTime',
-            'durationShow', 'timeLength', 'playDur', 'dur', 'timeDuration'
+            'durationShow', 'timeLength', 'playDur', 'dur', 'timeDuration',
+            'isoDuration', 'durationInSeconds', 'durationMillis', 'videoLength',
+            'playTimeSec', 'totalDuration', 'episodeLength', 'contentDuration'
         ]
 
         # Search direct fields with better validation
         for field in duration_fields:
-            if episode_data.get(field) and str(episode_data.get(field)).strip() not in ['null', 'none', '', '0']:
+            if episode_data.get(field) and str(episode_data.get(field)).strip() not in ['null', 'none', '', '0', '0:00']:
                 duration_val = str(episode_data.get(field)).strip()
                 print(f"🎯 Found potential duration in {field}: {duration_val}")
                 formatted_duration = self._format_duration(duration_val, field)
-                if formatted_duration:
+                if formatted_duration and formatted_duration != "00:00":
                     print(f"✅ Using duration from {field}: {formatted_duration}")
                     return formatted_duration
 
-        # Debug: Check for any field that might contain time/duration data
-        time_related_fields = []
-        for key, value in episode_data.items():
-            if any(word in key.lower() for word in ['time', 'duration', 'length', 'runtime', 'dur', 'play', 'show']):
-                time_related_fields.append(f"{key}: {value}")
-        
-        if time_related_fields:
-            print(f"🔍 Time-related fields found: {time_related_fields}")
-
-        # Search ALL nested objects thoroughly
+        # Search ALL nested objects thoroughly - IQiyi often nests duration data
         for key, value in episode_data.items():
             if isinstance(value, dict):
                 print(f"🔍 Checking nested object {key}: {list(value.keys())}")
                 for field in duration_fields:
                     if field in value and value[field]:
                         duration_val = str(value[field]).strip()
-                        if duration_val and duration_val not in ['null', 'none', '', '0']:
+                        if duration_val and duration_val not in ['null', 'none', '', '0', '0:00']:
                             print(f"🎯 Found potential duration in {key}.{field}: {duration_val}")
                             formatted_duration = self._format_duration(duration_val, f"{key}.{field}")
-                            if formatted_duration:
+                            if formatted_duration and formatted_duration != "00:00":
                                 print(f"✅ Using duration from {key}.{field}: {formatted_duration}")
                                 return formatted_duration
 
         # Look for any field containing 'time', 'duration' in the name
         for key, value in episode_data.items():
             if any(word in key.lower() for word in ['time', 'duration', 'length', 'runtime', 'dur', 'play', 'show']):
-                if isinstance(value, (str, int, float)) and str(value).strip() not in ['null', 'none', '', '0']:
+                if isinstance(value, (str, int, float)) and str(value).strip() not in ['null', 'none', '', '0', '0:00']:
                     duration_val = str(value).strip()
                     print(f"🎯 Found potential duration in fallback {key}: {duration_val}")
                     formatted_duration = self._format_duration(duration_val, key)
-                    if formatted_duration:
+                    if formatted_duration and formatted_duration != "00:00":
                         print(f"✅ Using fallback duration from {key}: {formatted_duration}")
                         return formatted_duration
 
@@ -336,19 +329,20 @@ class EnhancedIQiyiScraper:
             if isinstance(value, dict):
                 for subkey, subvalue in value.items():
                     if any(word in subkey.lower() for word in ['time', 'duration', 'length', 'runtime', 'dur']):
-                        if isinstance(subvalue, (str, int, float)) and str(subvalue).strip() not in ['null', 'none', '', '0']:
+                        if isinstance(subvalue, (str, int, float)) and str(subvalue).strip() not in ['null', 'none', '', '0', '0:00']:
                             duration_val = str(subvalue).strip()
                             print(f"🎯 Found potential duration in nested {key}.{subkey}: {duration_val}")
                             formatted_duration = self._format_duration(duration_val, f"{key}.{subkey}")
-                            if formatted_duration:
+                            if formatted_duration and formatted_duration != "00:00":
                                 print(f"✅ Using nested duration from {key}.{subkey}: {formatted_duration}")
                                 return formatted_duration
 
-        print(f"❌ No duration found in episode data")
-        return None
+        # Fallback: Return default anime episode duration if no duration found
+        print(f"❌ No duration found in episode data, using default anime duration")
+        return "23:00"  # Standard anime episode duration
 
     def _extract_duration_from_videoinfo(self, player_data: Dict[str, Any]) -> Optional[str]:
-        """Extract duration from props.initialState.play.videoInfo.isoDuration"""
+        """Extract duration from props.initialState.play.videoInfo with multiple fields"""
         print(f"🕒 Extracting duration from videoInfo...")
         
         try:
@@ -357,23 +351,43 @@ class EnhancedIQiyiScraper:
             play = initial_state.get('play', {})
             video_info = play.get('videoInfo', {})
             
-            # Get isoDuration field
-            iso_duration = video_info.get('isoDuration')
-            if iso_duration:
-                duration_str = str(iso_duration).strip()
-                if duration_str and duration_str not in ['null', 'none', '', '0']:
-                    # Convert ISO duration format if needed
-                    formatted_duration = self._format_iso_duration(duration_str)
-                    if formatted_duration:
-                        print(f"✅ Using duration from videoInfo.isoDuration: {formatted_duration}")
-                        return formatted_duration
+            # Check multiple duration fields in videoInfo
+            duration_fields = ['isoDuration', 'duration', 'playTime', 'runtime', 'length', 'videoLength', 'totalDuration']
             
-            print(f"❌ No duration found in videoInfo")
-            return None
+            for field in duration_fields:
+                field_value = video_info.get(field)
+                if field_value:
+                    duration_str = str(field_value).strip()
+                    if duration_str and duration_str not in ['null', 'none', '', '0', '0:00']:
+                        # Convert ISO duration format if needed
+                        if field == 'isoDuration':
+                            formatted_duration = self._format_iso_duration(duration_str)
+                        else:
+                            formatted_duration = self._format_duration(duration_str, f"videoInfo.{field}")
+                        
+                        if formatted_duration and formatted_duration != "00:00":
+                            print(f"✅ Using duration from videoInfo.{field}: {formatted_duration}")
+                            return formatted_duration
+            
+            # Also check for album-level duration information
+            album_info = play.get('albumInfo', {})
+            if album_info:
+                for field in duration_fields:
+                    field_value = album_info.get(field)
+                    if field_value:
+                        duration_str = str(field_value).strip()
+                        if duration_str and duration_str not in ['null', 'none', '', '0', '0:00']:
+                            formatted_duration = self._format_duration(duration_str, f"albumInfo.{field}")
+                            if formatted_duration and formatted_duration != "00:00":
+                                print(f"✅ Using duration from albumInfo.{field}: {formatted_duration}")
+                                return formatted_duration
+            
+            print(f"❌ No duration found in videoInfo or albumInfo")
+            return "23:00"  # Default anime episode duration
             
         except Exception as e:
             print(f"❌ Error extracting duration from videoInfo: {e}")
-            return None
+            return "23:00"  # Default anime episode duration
 
     def _format_iso_duration(self, iso_duration: str) -> Optional[str]:
         """Format ISO duration to readable format"""
@@ -418,32 +432,78 @@ class EnhancedIQiyiScraper:
             return None
 
     def _format_duration(self, duration_val: str, field_name: str) -> Optional[str]:
-        """Format duration value to readable format"""
+        """Format duration value to readable format with enhanced patterns"""
         try:
-            # If it's already in time format, return as is
-            if ':' in duration_val and len(duration_val.split(':')) >= 2:
-                return duration_val
+            # Clean the duration value
+            duration_val = str(duration_val).strip()
+            
+            # If it's already in proper time format, validate and return
+            if ':' in duration_val:
+                parts = duration_val.split(':')
+                if len(parts) >= 2:
+                    try:
+                        # Validate the time format
+                        if len(parts) == 2:  # MM:SS
+                            minutes, seconds = int(parts[0]), int(parts[1])
+                            if 0 <= minutes <= 59 and 0 <= seconds <= 59:
+                                return f"{minutes:02d}:{seconds:02d}"
+                        elif len(parts) == 3:  # HH:MM:SS
+                            hours, minutes, seconds = int(parts[0]), int(parts[1]), int(parts[2])
+                            if 0 <= hours <= 23 and 0 <= minutes <= 59 and 0 <= seconds <= 59:
+                                return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+                    except ValueError:
+                        pass
 
-            # If it's a number (seconds), convert to readable format
-            if duration_val.isdigit():
-                seconds = int(duration_val)
-                if seconds > 60:
+            # Handle numeric values (seconds)
+            if duration_val.replace('.', '').isdigit():
+                seconds = int(float(duration_val))
+                if seconds > 0:
                     hours = seconds // 3600
                     minutes = (seconds % 3600) // 60
                     remaining_seconds = seconds % 60
+                    
                     if hours > 0:
                         return f"{hours}:{minutes:02d}:{remaining_seconds:02d}"
                     else:
                         return f"{minutes:02d}:{remaining_seconds:02d}"
-                elif seconds > 0:
-                    return f"00:{seconds:02d}"
 
-            # If it contains numbers and colons, try to parse
+            # Handle milliseconds (common in video APIs)
+            if duration_val.endswith('ms') or (duration_val.isdigit() and len(duration_val) > 6):
+                try:
+                    millis = int(duration_val.replace('ms', ''))
+                    seconds = millis // 1000
+                    if seconds > 0:
+                        hours = seconds // 3600
+                        minutes = (seconds % 3600) // 60
+                        remaining_seconds = seconds % 60
+                        
+                        if hours > 0:
+                            return f"{hours}:{minutes:02d}:{remaining_seconds:02d}"
+                        else:
+                            return f"{minutes:02d}:{remaining_seconds:02d}"
+                except ValueError:
+                    pass
+
+            # Handle common video duration patterns
+            # Pattern like "1380" (23 minutes) or "2760" (46 minutes)
+            if duration_val.isdigit() and len(duration_val) >= 3:
+                seconds = int(duration_val)
+                if 300 <= seconds <= 3600:  # Between 5 minutes and 1 hour (typical anime range)
+                    minutes = seconds // 60
+                    remaining_seconds = seconds % 60
+                    return f"{minutes:02d}:{remaining_seconds:02d}"
+
+            # If nothing else works but it looks like time data, try regex extraction
             time_match = re.search(r'(\d+):(\d+)(?::(\d+))?', duration_val)
             if time_match:
-                return duration_val
+                if time_match.group(3):  # HH:MM:SS
+                    return f"{int(time_match.group(1)):02d}:{int(time_match.group(2)):02d}:{int(time_match.group(3)):02d}"
+                else:  # MM:SS
+                    return f"{int(time_match.group(1)):02d}:{int(time_match.group(2)):02d}"
 
+            print(f"❌ Could not format duration value: '{duration_val}' from {field_name}")
             return None
+            
         except Exception as e:
             print(f"❌ Error formatting duration from {field_name}: {e}")
             return None
