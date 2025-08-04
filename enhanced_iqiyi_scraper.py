@@ -579,9 +579,12 @@ class EnhancedIQiyiScraper:
                 thumbnail = self._extract_thumbnail(current_episode)
                 duration = self._extract_duration(current_episode)
                 
-                # Try to get more detailed data from videoInfo and album if not found
-                if not description:
-                    description = self._extract_description_from_album(player_data)
+                # Try to get more detailed data from videoInfo and album - prioritize album description
+                if not description or len(description) < 50:  # If no description or description is too short
+                    album_description = self._extract_description_from_album(player_data)
+                    if album_description and len(album_description) > 50:
+                        description = album_description
+                        print(f"✅ Using detailed album description for single episode")
                 if not thumbnail:
                     thumbnail = self._extract_thumbnail_from_videoinfo(player_data)
                 if not duration:
@@ -709,9 +712,12 @@ class EnhancedIQiyiScraper:
                     if individual_duration:
                         duration = individual_duration
                 
-                # Try to get more detailed data from videoInfo and album if not found
-                if not description:
-                    description = self._extract_description_from_album(player_data)
+                # Try to get more detailed data from videoInfo and album - prioritize album description for all episodes
+                if not description or len(description) < 50:  # If no description or description is too short
+                    album_description = self._extract_description_from_album(player_data)
+                    if album_description and len(album_description) > 50:
+                        description = album_description
+                        print(f"✅ Using detailed album description for Episode {actual_episode_number}")
                 if not thumbnail:
                     thumbnail = self._extract_thumbnail_from_videoinfo(player_data)
                 if not duration:
