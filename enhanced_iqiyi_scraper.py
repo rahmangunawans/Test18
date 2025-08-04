@@ -241,32 +241,48 @@ class EnhancedIQiyiScraper:
         return None
 
     def _extract_duration(self, episode_data: Dict[str, Any]) -> Optional[str]:
-        """Enhanced duration extraction with comprehensive field search"""
+        """Enhanced duration extraction with comprehensive field search and debugging"""
         print(f"🕒 Extracting duration from episode data...")
+
+        # Debug: Print all available keys to understand the data structure
+        print(f"🔍 Available episode data keys: {list(episode_data.keys())}")
 
         # Comprehensive duration field list
         duration_fields = [
             'duration', 'playTime', 'length', 'totalTime', 'runTime', 'time',
             'videoDuration', 'showTime', 'programDuration', 'episodeDuration',
-            'runtime', 'playLength', 'videoTime', 'mediaTime', 'contentTime'
+            'runtime', 'playLength', 'videoTime', 'mediaTime', 'contentTime',
+            'durationShow', 'timeLength', 'playDur', 'dur', 'timeDuration'
         ]
 
         # Search direct fields with better validation
         for field in duration_fields:
             if episode_data.get(field) and str(episode_data.get(field)).strip() not in ['null', 'none', '', '0']:
                 duration_val = str(episode_data.get(field)).strip()
+                print(f"🎯 Found potential duration in {field}: {duration_val}")
                 formatted_duration = self._format_duration(duration_val, field)
                 if formatted_duration:
                     print(f"✅ Using duration from {field}: {formatted_duration}")
                     return formatted_duration
 
+        # Debug: Check for any field that might contain time/duration data
+        time_related_fields = []
+        for key, value in episode_data.items():
+            if any(word in key.lower() for word in ['time', 'duration', 'length', 'runtime', 'dur', 'play', 'show']):
+                time_related_fields.append(f"{key}: {value}")
+        
+        if time_related_fields:
+            print(f"🔍 Time-related fields found: {time_related_fields}")
+
         # Search ALL nested objects thoroughly
         for key, value in episode_data.items():
             if isinstance(value, dict):
+                print(f"🔍 Checking nested object {key}: {list(value.keys())}")
                 for field in duration_fields:
                     if field in value and value[field]:
                         duration_val = str(value[field]).strip()
                         if duration_val and duration_val not in ['null', 'none', '', '0']:
+                            print(f"🎯 Found potential duration in {key}.{field}: {duration_val}")
                             formatted_duration = self._format_duration(duration_val, f"{key}.{field}")
                             if formatted_duration:
                                 print(f"✅ Using duration from {key}.{field}: {formatted_duration}")
@@ -274,15 +290,29 @@ class EnhancedIQiyiScraper:
 
         # Look for any field containing 'time', 'duration' in the name
         for key, value in episode_data.items():
-            if any(word in key.lower() for word in ['time', 'duration', 'length', 'runtime']):
+            if any(word in key.lower() for word in ['time', 'duration', 'length', 'runtime', 'dur', 'play', 'show']):
                 if isinstance(value, (str, int, float)) and str(value).strip() not in ['null', 'none', '', '0']:
                     duration_val = str(value).strip()
+                    print(f"🎯 Found potential duration in fallback {key}: {duration_val}")
                     formatted_duration = self._format_duration(duration_val, key)
                     if formatted_duration:
                         print(f"✅ Using fallback duration from {key}: {formatted_duration}")
                         return formatted_duration
 
-        print(f"❌ No duration found")
+        # Search nested objects for any time-related fields
+        for key, value in episode_data.items():
+            if isinstance(value, dict):
+                for subkey, subvalue in value.items():
+                    if any(word in subkey.lower() for word in ['time', 'duration', 'length', 'runtime', 'dur']):
+                        if isinstance(subvalue, (str, int, float)) and str(subvalue).strip() not in ['null', 'none', '', '0']:
+                            duration_val = str(subvalue).strip()
+                            print(f"🎯 Found potential duration in nested {key}.{subkey}: {duration_val}")
+                            formatted_duration = self._format_duration(duration_val, f"{key}.{subkey}")
+                            if formatted_duration:
+                                print(f"✅ Using nested duration from {key}.{subkey}: {formatted_duration}")
+                                return formatted_duration
+
+        print(f"❌ No duration found after comprehensive search")
         return None
 
     def _format_duration(self, duration_val: str, field_name: str) -> Optional[str]:
