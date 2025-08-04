@@ -181,54 +181,140 @@ class EnhancedIQiyiScraper:
         return None
 
     def _extract_thumbnail(self, episode_data: Dict[str, Any]) -> Optional[str]:
-        """Extract thumbnail with multiple fallbacks"""
+        """Enhanced thumbnail extraction with comprehensive field search"""
+        print(f"🖼️ Extracting thumbnail from episode data...")
+
+        # More comprehensive thumbnail field list from reference
         thumbnail_fields = [
             'thumbnail', 'poster', 'image', 'cover', 'pic', 'img', 'picUrl', 'imageUrl',
-            'posterUrl', 'coverUrl', 'thumbUrl', 'previewImage', 'snapshot', 'vpic', 'rseat'
+            'posterUrl', 'coverUrl', 'thumbUrl', 'previewImage', 'snapshot', 'vpic', 'rseat',
+            'imgUrl', 'picPath', 'imagePath', 'coverImage', 'posterImage', 'thumbImage',
+            'previewImg', 'coverPic', 'albumImg', 'episodeImg', 'showImg', 'screencap'
         ]
-        
-        # Try direct fields
+
+        # Search direct fields
         for field in thumbnail_fields:
             if episode_data.get(field):
                 thumbnail = str(episode_data.get(field)).strip()
                 if thumbnail and thumbnail not in ['null', 'none', '']:
-                    if any(thumbnail.startswith(prefix) for prefix in ['http://', 'https://', '//', '/']):
-                        return thumbnail
-        
-        # Try nested objects
+                    # More flexible URL validation
+                    if any(thumbnail.startswith(prefix) for prefix in ['http://', 'https://', '//', '/', 'data:']):
+                        final_url = thumbnail if thumbnail.startswith('http') else f"https:{thumbnail}"
+                        print(f"✅ Using thumbnail from {field}: {final_url}")
+                        return final_url
+
+        # Search ALL nested objects thoroughly
         for key, value in episode_data.items():
             if isinstance(value, dict):
                 for field in thumbnail_fields:
                     if field in value and value[field]:
                         thumbnail = str(value[field]).strip()
                         if thumbnail and thumbnail not in ['null', 'none', '']:
-                            if any(thumbnail.startswith(prefix) for prefix in ['http://', 'https://', '//', '/']):
-                                return thumbnail
-        
+                            if any(thumbnail.startswith(prefix) for prefix in ['http://', 'https://', '//', '/', 'data:']):
+                                final_url = thumbnail if thumbnail.startswith('http') else f"https:{thumbnail}"
+                                print(f"✅ Using thumbnail from {key}.{field}: {final_url}")
+                                return final_url
+
+        # Look for any field containing 'img', 'pic', 'photo', or 'image' in the name
+        for key, value in episode_data.items():
+            if any(word in key.lower() for word in ['img', 'pic', 'photo', 'image', 'cover', 'poster']):
+                if isinstance(value, str) and value.strip():
+                    thumbnail = value.strip()
+                    if any(thumbnail.startswith(prefix) for prefix in ['http://', 'https://', '//', '/', 'data:']):
+                        final_url = thumbnail if thumbnail.startswith('http') else f"https:{thumbnail}"
+                        print(f"✅ Using fallback thumbnail from {key}: {final_url}")
+                        return final_url
+
+        # Search nested objects for any image-like fields
+        for key, value in episode_data.items():
+            if isinstance(value, dict):
+                for subkey, subvalue in value.items():
+                    if any(word in subkey.lower() for word in ['img', 'pic', 'photo', 'image', 'cover', 'poster']):
+                        if isinstance(subvalue, str) and subvalue.strip():
+                            thumbnail = subvalue.strip()
+                            if any(thumbnail.startswith(prefix) for prefix in ['http://', 'https://', '//', '/', 'data:']):
+                                final_url = thumbnail if thumbnail.startswith('http') else f"https:{thumbnail}"
+                                print(f"✅ Using nested fallback thumbnail from {key}.{subkey}: {final_url}")
+                                return final_url
+
+        print(f"❌ No thumbnail found")
         return None
 
     def _extract_duration(self, episode_data: Dict[str, Any]) -> Optional[str]:
-        """Extract duration with multiple fallbacks"""
+        """Enhanced duration extraction with comprehensive field search"""
+        print(f"🕒 Extracting duration from episode data...")
+
+        # Comprehensive duration field list
         duration_fields = [
-            'duration', 'playTime', 'length', 'totalTime', 'runTime', 'time', 
-            'playDuration', 'videoDuration', 'episodeDuration', 'showTime'
+            'duration', 'playTime', 'length', 'totalTime', 'runTime', 'time',
+            'videoDuration', 'showTime', 'programDuration', 'episodeDuration',
+            'runtime', 'playLength', 'videoTime', 'mediaTime', 'contentTime'
         ]
-        
-        # Try direct fields
+
+        # Search direct fields with better validation
         for field in duration_fields:
             if episode_data.get(field) and str(episode_data.get(field)).strip() not in ['null', 'none', '', '0']:
-                duration = str(episode_data.get(field)).strip()
-                try:
-                    if duration.isdigit():
-                        seconds = int(duration)
-                        if seconds > 60:
-                            minutes = seconds // 60
-                            return f"{minutes}:{seconds % 60:02d}"
-                    return duration
-                except:
-                    continue
-        
+                duration_val = str(episode_data.get(field)).strip()
+                formatted_duration = self._format_duration(duration_val, field)
+                if formatted_duration:
+                    print(f"✅ Using duration from {field}: {formatted_duration}")
+                    return formatted_duration
+
+        # Search ALL nested objects thoroughly
+        for key, value in episode_data.items():
+            if isinstance(value, dict):
+                for field in duration_fields:
+                    if field in value and value[field]:
+                        duration_val = str(value[field]).strip()
+                        if duration_val and duration_val not in ['null', 'none', '', '0']:
+                            formatted_duration = self._format_duration(duration_val, f"{key}.{field}")
+                            if formatted_duration:
+                                print(f"✅ Using duration from {key}.{field}: {formatted_duration}")
+                                return formatted_duration
+
+        # Look for any field containing 'time', 'duration' in the name
+        for key, value in episode_data.items():
+            if any(word in key.lower() for word in ['time', 'duration', 'length', 'runtime']):
+                if isinstance(value, (str, int, float)) and str(value).strip() not in ['null', 'none', '', '0']:
+                    duration_val = str(value).strip()
+                    formatted_duration = self._format_duration(duration_val, key)
+                    if formatted_duration:
+                        print(f"✅ Using fallback duration from {key}: {formatted_duration}")
+                        return formatted_duration
+
+        print(f"❌ No duration found")
         return None
+
+    def _format_duration(self, duration_val: str, field_name: str) -> Optional[str]:
+        """Format duration value to readable format"""
+        try:
+            # If it's already in time format, return as is
+            if ':' in duration_val and len(duration_val.split(':')) >= 2:
+                return duration_val
+
+            # If it's a number (seconds), convert to readable format
+            if duration_val.isdigit():
+                seconds = int(duration_val)
+                if seconds > 60:
+                    hours = seconds // 3600
+                    minutes = (seconds % 3600) // 60
+                    remaining_seconds = seconds % 60
+                    if hours > 0:
+                        return f"{hours}:{minutes:02d}:{remaining_seconds:02d}"
+                    else:
+                        return f"{minutes:02d}:{remaining_seconds:02d}"
+                elif seconds > 0:
+                    return f"00:{seconds:02d}"
+
+            # If it contains numbers and colons, try to parse
+            time_match = re.search(r'(\d+):(\d+)(?::(\d+))?', duration_val)
+            if time_match:
+                return duration_val
+
+            return None
+        except Exception as e:
+            print(f"❌ Error formatting duration from {field_name}: {e}")
+            return None
 
     def extract_single_episode(self) -> Optional[EpisodeInfo]:
         """Extract single episode information"""
