@@ -12,6 +12,138 @@ import urllib3
 # Disable SSL warnings
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
+def extract_enhanced_thumbnail(episode_data: Dict) -> Optional[str]:
+    """Enhanced thumbnail extraction using comprehensive field search"""
+    print(f"🖼️ Extracting thumbnail from episode data...")
+
+    # More comprehensive thumbnail field list from reference
+    thumbnail_fields = [
+        'thumbnail', 'poster', 'image', 'cover', 'pic', 'img', 'picUrl', 'imageUrl',
+        'posterUrl', 'coverUrl', 'thumbUrl', 'previewImage', 'snapshot', 'vpic', 'rseat',
+        'imgUrl', 'picPath', 'imagePath', 'coverImage', 'posterImage', 'thumbImage',
+        'previewImg', 'coverPic', 'albumImg', 'episodeImg', 'showImg', 'screencap'
+    ]
+
+    # Search direct fields
+    for field in thumbnail_fields:
+        if episode_data.get(field):
+            thumbnail = str(episode_data.get(field)).strip()
+            if thumbnail and thumbnail not in ['null', 'none', '']:
+                # More flexible URL validation
+                if any(thumbnail.startswith(prefix) for prefix in ['http://', 'https://', '//', '/', 'data:']):
+                    print(f"✅ Using thumbnail from {field}: {thumbnail}")
+                    return thumbnail if thumbnail.startswith('http') else f"https:{thumbnail}"
+
+    # Search ALL nested objects thoroughly
+    for key, value in episode_data.items():
+        if isinstance(value, dict):
+            for field in thumbnail_fields:
+                if field in value and value[field]:
+                    thumbnail = str(value[field]).strip()
+                    if thumbnail and thumbnail not in ['null', 'none', '']:
+                        if any(thumbnail.startswith(prefix) for prefix in ['http://', 'https://', '//', '/', 'data:']):
+                            print(f"✅ Using thumbnail from {key}.{field}: {thumbnail}")
+                            return thumbnail if thumbnail.startswith('http') else f"https:{thumbnail}"
+
+    # Look for any field containing 'img', 'pic', 'photo', or 'image' in the name
+    for key, value in episode_data.items():
+        if any(word in key.lower() for word in ['img', 'pic', 'photo', 'image', 'cover', 'poster']):
+            if isinstance(value, str) and value.strip():
+                thumbnail = value.strip()
+                if any(thumbnail.startswith(prefix) for prefix in ['http://', 'https://', '//', '/', 'data:']):
+                    print(f"✅ Using fallback thumbnail from {key}: {thumbnail}")
+                    return thumbnail if thumbnail.startswith('http') else f"https:{thumbnail}"
+
+    # Search nested objects for any image-like fields
+    for key, value in episode_data.items():
+        if isinstance(value, dict):
+            for subkey, subvalue in value.items():
+                if any(word in subkey.lower() for word in ['img', 'pic', 'photo', 'image', 'cover', 'poster']):
+                    if isinstance(subvalue, str) and subvalue.strip():
+                        thumbnail = subvalue.strip()
+                        if any(thumbnail.startswith(prefix) for prefix in ['http://', 'https://', '//', '/', 'data:']):
+                            print(f"✅ Using nested fallback thumbnail from {key}.{subkey}: {thumbnail}")
+                            return thumbnail if thumbnail.startswith('http') else f"https:{thumbnail}"
+
+    print(f"❌ No thumbnail found")
+    return None
+
+def extract_enhanced_duration(episode_data: Dict) -> Optional[str]:
+    """Enhanced duration extraction using comprehensive field search"""
+    print(f"🕒 Extracting duration from episode data...")
+
+    # Comprehensive duration field list
+    duration_fields = [
+        'duration', 'playTime', 'length', 'totalTime', 'runTime', 'time',
+        'videoDuration', 'showTime', 'programDuration', 'episodeDuration',
+        'runtime', 'playLength', 'videoTime', 'mediaTime', 'contentTime'
+    ]
+
+    # Search direct fields with better validation
+    for field in duration_fields:
+        if episode_data.get(field) and str(episode_data.get(field)).strip() not in ['null', 'none', '', '0']:
+            duration_val = str(episode_data.get(field)).strip()
+            formatted_duration = format_duration(duration_val, field)
+            if formatted_duration:
+                print(f"✅ Using duration from {field}: {formatted_duration}")
+                return formatted_duration
+
+    # Search ALL nested objects thoroughly
+    for key, value in episode_data.items():
+        if isinstance(value, dict):
+            for field in duration_fields:
+                if field in value and value[field]:
+                    duration_val = str(value[field]).strip()
+                    if duration_val and duration_val not in ['null', 'none', '', '0']:
+                        formatted_duration = format_duration(duration_val, f"{key}.{field}")
+                        if formatted_duration:
+                            print(f"✅ Using duration from {key}.{field}: {formatted_duration}")
+                            return formatted_duration
+
+    # Look for any field containing 'time', 'duration' in the name
+    for key, value in episode_data.items():
+        if any(word in key.lower() for word in ['time', 'duration', 'length', 'runtime']):
+            if isinstance(value, (str, int, float)) and str(value).strip() not in ['null', 'none', '', '0']:
+                duration_val = str(value).strip()
+                formatted_duration = format_duration(duration_val, key)
+                if formatted_duration:
+                    print(f"✅ Using fallback duration from {key}: {formatted_duration}")
+                    return formatted_duration
+
+    print(f"❌ No duration found")
+    return None
+
+def format_duration(duration_val: str, field_name: str) -> Optional[str]:
+    """Format duration value to readable format"""
+    try:
+        # If it's already in time format, return as is
+        if ':' in duration_val and len(duration_val.split(':')) >= 2:
+            return duration_val
+
+        # If it's a number (seconds), convert to readable format
+        if duration_val.isdigit():
+            seconds = int(duration_val)
+            if seconds > 60:
+                hours = seconds // 3600
+                minutes = (seconds % 3600) // 60
+                remaining_seconds = seconds % 60
+                if hours > 0:
+                    return f"{hours}:{minutes:02d}:{remaining_seconds:02d}"
+                else:
+                    return f"{minutes:02d}:{remaining_seconds:02d}"
+            elif seconds > 0:
+                return f"00:{seconds:02d}"
+
+        # If it contains numbers and colons, try to parse
+        time_match = re.search(r'(\d+):(\d+)(?::(\d+))?', duration_val)
+        if time_match:
+            return duration_val
+
+        return None
+    except Exception as e:
+        print(f"❌ Error formatting duration from {field_name}: {e}")
+        return None
+
 def scrape_basic_episodes(playlist_url: str, max_episodes: int = 5) -> Dict:
     """
     Scrape basic episode information tanpa M3U8 extraction
@@ -43,7 +175,7 @@ def scrape_basic_episodes(playlist_url: str, max_episodes: int = 5) -> Dict:
         # Extract episodes using enhanced JSON-based approach
         episodes = []
         
-        # Try to extract from __NEXT_DATA__ for better metadata
+        # Try to extract from __NEXT_DATA__ using enhanced methods from reference
         json_match = re.search(r'<script id="__NEXT_DATA__" type="application/json">([^<]+)</script>', content)
         if json_match:
             try:
@@ -62,31 +194,11 @@ def scrape_basic_episodes(playlist_url: str, max_episodes: int = 5) -> Dict:
                 for i, episode in enumerate(episode_data[:max_episodes], 1):
                     episode_title = episode.get('subTitle', f'Episode {i}')
                     
-                    # Extract thumbnail
-                    thumbnail = None
-                    for thumb_field in ['thumbnail', 'poster', 'image', 'cover', 'pic', 'img', 'picUrl', 'imageUrl', 'vpic', 'rseat']:
-                        if episode.get(thumb_field):
-                            thumb_url = str(episode.get(thumb_field)).strip()
-                            if thumb_url and thumb_url not in ['null', 'none', '']:
-                                thumbnail = thumb_url if thumb_url.startswith('http') else f"https:{thumb_url}"
-                                break
+                    # Enhanced thumbnail extraction using reference methods
+                    thumbnail = extract_enhanced_thumbnail(episode)
                     
-                    # Extract duration
-                    duration = None
-                    for duration_field in ['duration', 'playTime', 'length', 'totalTime', 'runTime', 'time']:
-                        if episode.get(duration_field) and str(episode.get(duration_field)).strip() not in ['null', 'none', '', '0']:
-                            duration_val = str(episode.get(duration_field)).strip()
-                            try:
-                                if duration_val.isdigit():
-                                    seconds = int(duration_val)
-                                    if seconds > 60:
-                                        minutes = seconds // 60
-                                        duration = f"{minutes:02d}:{seconds % 60:02d}"
-                                elif ':' in duration_val:
-                                    duration = duration_val
-                            except:
-                                continue
-                            break
+                    # Enhanced duration extraction using reference methods
+                    duration = extract_enhanced_duration(episode)
                     
                     # Build episode URL
                     album_url = episode.get('albumPlayUrl', '')
@@ -101,7 +213,7 @@ def scrape_basic_episodes(playlist_url: str, max_episodes: int = 5) -> Dict:
                         'episode_number': i,
                         'title': episode_title,
                         'url': full_url,
-                        'thumbnail_url': thumbnail,  # Changed key name to match expected format
+                        'thumbnail_url': thumbnail,
                         'duration': duration,
                         'dash_url': None,
                         'is_valid': True,
