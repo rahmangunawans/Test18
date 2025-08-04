@@ -104,6 +104,11 @@ def anime_redirect(content_id):
         flash('No episodes available for this anime.', 'error')
         return redirect(url_for('content.anime_list'))
 
+@content_bp.route('/content/<int:content_id>')
+def content_detail(content_id):
+    """Content detail page - redirect to first episode"""
+    return redirect(url_for('content.anime_redirect', content_id=content_id))
+
 
 
 @content_bp.route('/watch/<int:content_id>/<int:episode_number>')
@@ -124,11 +129,11 @@ def watch_episode(episode_id):
         
         if not content:
             flash('Content not found for this episode.', 'error')
-            return redirect(url_for('main.index'))
+            return redirect(url_for('index'))
     except Exception as e:
         logging.error(f"Error loading episode {episode_id}: {e}")
         flash('Episode not found.', 'error')
-        return redirect(url_for('main.index'))
+        return redirect(url_for('index'))
     
     # Check if user can watch this episode
     can_watch_full = current_user.can_watch_full_episode(episode.episode_number)
@@ -195,7 +200,7 @@ def watch_episode(episode_id):
     except Exception as e:
         logging.error(f"Error rendering video player for episode {episode_id}: {e}")
         flash(f'Error loading video player: {str(e)}', 'error')
-        return redirect(url_for('main.index'))
+        return redirect(url_for('index'))
 
 
 
