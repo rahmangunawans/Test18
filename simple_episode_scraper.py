@@ -40,56 +40,132 @@ def scrape_basic_episodes(playlist_url: str, max_episodes: int = 5) -> Dict:
         content = response.text
         print(f"✅ Page loaded: {len(content)} characters")
         
-        # Extract episodes using regex patterns
+        # Extract episodes using enhanced JSON-based approach
         episodes = []
         
-        # Pattern 1: Multiple episode link patterns
-        patterns = [
-            r'href="([^"]*episode[^"]*)"[^>]*>([^<]*(?:Episode|episode|集)[^<]*)</a>',
-            r'href="([^"]*super-cube[^"]*)"[^>]*>([^<]*(?:Episode|episode|集|第)[^<]*)</a>',
-            r'data-link="([^"]*super-cube[^"]*)"[^>]*>([^<]*(?:Episode|episode|集|第)[^<]*)',
-            r'"url":"([^"]*super-cube[^"]*)".*?"title":"([^"]*)"'
-        ]
-        
-        all_matches = []
-        for pattern in patterns:
-            matches = re.findall(pattern, content, re.IGNORECASE)
-            all_matches.extend(matches)
-        
-        # Also try to find more episodes by scanning the entire page
-        super_cube_links = re.findall(r'href="([^"]*super-cube[^"]*)"', content, re.IGNORECASE)
-        for link in super_cube_links:
-            if 'episode' in link.lower() or 'play' in link.lower():
-                # Extract episode number
-                ep_match = re.search(r'episode[_-]?(\d+)', link, re.IGNORECASE)
-                if ep_match:
-                    episode_num = ep_match.group(1)
-                    title = f"Super Cube Episode {episode_num}"
-                    all_matches.append((link, title))
-        
-        matches = all_matches
-        
-        for i, (url, title) in enumerate(matches[:max_episodes], 1):
-            # Clean up URL
-            if url.startswith('//'):
-                url = 'https:' + url
-            elif url.startswith('/'):
-                url = 'https://www.iq.com' + url
+        # Try to extract from __NEXT_DATA__ for better metadata
+        json_match = re.search(r'<script id="__NEXT_DATA__" type="application/json">([^<]+)</script>', content)
+        if json_match:
+            try:
+                json_data = json.loads(json_match.group(1))
+                print("✅ Found __NEXT_DATA__ - using enhanced extraction")
+                
+                # Navigate the JSON structure to find episodes
+                props = json_data.get('props', {})
+                initial_state = props.get('initialState', {})
+                play = initial_state.get('play', {})
+                cache_playlist = play.get('cachePlayList', {})
+                episode_data = cache_playlist.get('1', [])
+                
+                print(f"📺 Found {len(episode_data)} episodes in JSON data")
+                
+                for i, episode in enumerate(episode_data[:max_episodes], 1):
+                    episode_title = episode.get('subTitle', f'Episode {i}')
+                    
+                    # Extract thumbnail
+                    thumbnail = None
+                    for thumb_field in ['thumbnail', 'poster', 'image', 'cover', 'pic', 'img', 'picUrl', 'imageUrl', 'vpic', 'rseat']:
+                        if episode.get(thumb_field):
+                            thumb_url = str(episode.get(thumb_field)).strip()
+                            if thumb_url and thumb_url not in ['null', 'none', '']:
+                                thumbnail = thumb_url if thumb_url.startswith('http') else f"https:{thumb_url}"
+                                break
+                    
+                    # Extract duration
+                    duration = None
+                    for duration_field in ['duration', 'playTime', 'length', 'totalTime', 'runTime', 'time']:
+                        if episode.get(duration_field) and str(episode.get(duration_field)).strip() not in ['null', 'none', '', '0']:
+                            duration_val = str(episode.get(duration_field)).strip()
+                            try:
+                                if duration_val.isdigit():
+                                    seconds = int(duration_val)
+                                    if seconds > 60:
+                                        minutes = seconds // 60
+                                        duration = f"{minutes:02d}:{seconds % 60:02d}"
+                                elif ':' in duration_val:
+                                    duration = duration_val
+                            except:
+                                continue
+                            break
+                    
+                    # Build episode URL
+                    album_url = episode.get('albumPlayUrl', '')
+                    if album_url.startswith('//'):
+                        full_url = f"https:{album_url}"
+                    elif album_url.startswith('/'):
+                        full_url = f"https://www.iq.com{album_url}"
+                    else:
+                        full_url = album_url
+                    
+                    episodes.append({
+                        'episode_number': i,
+                        'title': episode_title,
+                        'url': full_url,
+                        'thumbnail_url': thumbnail,  # Changed key name to match expected format
+                        'duration': duration,
+                        'dash_url': None,
+                        'is_valid': True,
+                        'method': 'enhanced_json_parsing'
+                    })
+                    
+                    print(f"   📺 Episode {i}: {episode_title}")
+                    print(f"      📷 Thumbnail: {'✅' if thumbnail else '❌'}")
+                    print(f"      ⏱️ Duration: {duration if duration else '❌'}")
             
-            # Clean up title
-            title = re.sub(r'<[^>]+>', '', title).strip()
-            if not title:
-                title = f"Episode {i}"
+            except (json.JSONDecodeError, KeyError) as e:
+                print(f"❌ JSON parsing failed: {e}, falling back to HTML parsing")
+        
+        # Fallback to HTML parsing if JSON extraction failed
+        if not episodes:
+            print("🔄 Using fallback HTML parsing method")
+            # Pattern-based extraction as fallback
+            patterns = [
+                r'href="([^"]*episode[^"]*)"[^>]*>([^<]*(?:Episode|episode|集)[^<]*)</a>',
+                r'href="([^"]*super-cube[^"]*)"[^>]*>([^<]*(?:Episode|episode|集|第)[^<]*)</a>',
+                r'data-link="([^"]*super-cube[^"]*)"[^>]*>([^<]*(?:Episode|episode|集|第)[^<]*)',
+                r'"url":"([^"]*super-cube[^"]*)".*?"title":"([^"]*)"'
+            ]
             
-            episodes.append({
-                'episode_number': i,
-                'title': title,
-                'url': url,
-                'thumbnail': None,
-                'dash_url': None,
-                'is_valid': True,  # Assume valid for basic scraping
-                'method': 'basic_html_parsing'
-            })
+            all_matches = []
+            for pattern in patterns:
+                matches = re.findall(pattern, content, re.IGNORECASE)
+                all_matches.extend(matches)
+            
+            # Also try to find more episodes by scanning the entire page
+            super_cube_links = re.findall(r'href="([^"]*super-cube[^"]*)"', content, re.IGNORECASE)
+            for link in super_cube_links:
+                if 'episode' in link.lower() or 'play' in link.lower():
+                    # Extract episode number
+                    ep_match = re.search(r'episode[_-]?(\d+)', link, re.IGNORECASE)
+                    if ep_match:
+                        episode_num = ep_match.group(1)
+                        title = f"Super Cube Episode {episode_num}"
+                        all_matches.append((link, title))
+            
+            matches = all_matches
+            
+            for i, (url, title) in enumerate(matches[:max_episodes], 1):
+                # Clean up URL
+                if url.startswith('//'):
+                    url = 'https:' + url
+                elif url.startswith('/'):
+                    url = 'https://www.iq.com' + url
+                
+                # Clean up title
+                title = re.sub(r'<[^>]+>', '', title).strip()
+                if not title:
+                    title = f"Episode {i}"
+                
+                episodes.append({
+                    'episode_number': i,
+                    'title': title,
+                    'url': url,
+                    'thumbnail_url': None,  # HTML parsing can't extract thumbnails easily
+                    'duration': None,       # HTML parsing can't extract duration easily
+                    'dash_url': None,
+                    'is_valid': True,
+                    'method': 'basic_html_parsing'
+                })
         
         print(f"✅ Found {len(episodes)} episodes using basic HTML parsing")
         
