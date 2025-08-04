@@ -693,7 +693,7 @@ class EnhancedIQiyiScraper:
         
         return False
 
-    def extract_all_episodes(self, max_episodes: int = 100) -> List[EpisodeInfo]:
+    def extract_all_episodes(self, max_episodes: int = 5) -> List[EpisodeInfo]:
         """Extract all episodes from playlist, filtering out previews and trailers"""
         print("📺 Extracting all episodes from playlist...")
         
@@ -749,22 +749,23 @@ class EnhancedIQiyiScraper:
                 # Extract from episode data (playlist level)
                 description = self._extract_description(episode)
                 thumbnail = self._extract_thumbnail(episode)
-                duration = self._extract_duration(episode)
+                duration = None  # Don't use playlist-level duration, get individual episode duration
                 
-                # Try to get duration from individual episode page for accuracy
-                if not duration and episode.get('albumPlayUrl'):
+                # Always try to get duration from individual episode page for accuracy
+                if episode.get('albumPlayUrl'):
                     episode_url = episode.get('albumPlayUrl')
                     if not episode_url.startswith('http'):
                         episode_url = f"https:{episode_url}"
                     
-                    print(f"🔍 Getting individual duration for Episode {actual_episode_number}")
+                    print(f"🔍 Getting individual duration for Episode {actual_episode_number} from: {episode_url}")
                     individual_duration = self._get_duration_from_individual_page(episode_url)
                     if individual_duration and individual_duration != "23:00":
                         duration = individual_duration
                         print(f"✅ Using individual episode duration: {duration}")
                 
-                # Fallback to global duration if still no duration found
+                # Only fallback to global duration if individual extraction fails
                 if not duration:
+                    print(f"⚠️ Individual duration extraction failed for Episode {actual_episode_number}")
                     fallback_duration = self._extract_duration_from_videoinfo(player_data)
                     if fallback_duration:
                         duration = fallback_duration
