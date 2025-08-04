@@ -314,6 +314,49 @@ class IQiyiScraper:
             print(f"❌ Error extracting duration: {e}")
             return None
 
+    def _extract_thumbnail_from_episode_data(self, episode_data: Dict[str, Any]) -> Optional[str]:
+        """Extract thumbnail with multiple fallbacks from episode data"""
+        thumbnail_fields = [
+            'thumbnail', 'poster', 'image', 'cover', 'pic', 'img', 'picUrl', 'imageUrl',
+            'posterUrl', 'coverUrl', 'thumbUrl', 'previewImage', 'snapshot', 'vpic', 'rseat'
+        ]
+        
+        # Try direct fields
+        for field in thumbnail_fields:
+            if episode_data.get(field):
+                thumbnail = str(episode_data.get(field)).strip()
+                if thumbnail and thumbnail not in ['null', 'none', '']:
+                    if any(thumbnail.startswith(prefix) for prefix in ['http://', 'https://', '//', '/']):
+                        return thumbnail if thumbnail.startswith('http') else f"https:{thumbnail}"
+        
+        return None
+
+    def _extract_duration_from_episode_data(self, episode_data: Dict[str, Any]) -> Optional[str]:
+        """Extract duration with multiple fallbacks from episode data"""
+        duration_fields = [
+            'duration', 'playTime', 'length', 'totalTime', 'runTime', 'time', 
+            'playDuration', 'videoDuration', 'episodeDuration', 'showTime'
+        ]
+        
+        # Try direct fields
+        for field in duration_fields:
+            if episode_data.get(field) and str(episode_data.get(field)).strip() not in ['null', 'none', '', '0']:
+                duration = str(episode_data.get(field)).strip()
+                try:
+                    if duration.isdigit():
+                        seconds = int(duration)
+                        if seconds > 60:
+                            minutes = seconds // 60
+                            return f"{minutes:02d}:{seconds % 60:02d}"
+                        elif seconds > 0:
+                            return f"00:{seconds:02d}"
+                    elif ':' in duration:
+                        return duration  # Already in MM:SS format
+                except:
+                    continue
+        
+        return None
+
     def extract_episode_info(self) -> Optional[EpisodeData]:
         """Extract informasi episode dari URL"""
         print(f"🎬 Extracting episode info dari: {self.url}")
@@ -433,6 +476,11 @@ class IQiyiScraper:
             for i, episode in enumerate(episode_data[:process_count], 1):
                 episode_title = episode.get('subTitle', f'Episode {i}')
                 
+                # Extract additional metadata from episode data
+                thumbnail_url = self._extract_thumbnail_from_episode_data(episode)
+                duration = self._extract_duration_from_episode_data(episode)
+                description = episode.get('description', '') or episode.get('playDesc', '')
+                
                 # Build episode URL
                 album_url = episode.get('albumPlayUrl', '')
                 if album_url.startswith('//'):
@@ -442,28 +490,26 @@ class IQiyiScraper:
                 else:
                     full_url = album_url
 
-                # Add delay between requests untuk mencegah rate limiting
-                if i > 1:
-                    time.sleep(1.0)  # Increased delay to 1 second for better stability
-                
                 print(f"🎬 Processing episode {i}/{process_count}: {episode_title}")
+                print(f"   📷 Thumbnail: {'✅' if thumbnail_url else '❌'}")
+                print(f"   ⏱️ Duration: {duration if duration else '❌'}")
                 
                 try:
-                    # Extract DASH URL untuk episode ini
-                    episode_scraper = IQiyiScraper(full_url)
-                    episode_info = episode_scraper.extract_episode_info()
+                    # Create episode data with extracted metadata
+                    episode_info = EpisodeData(
+                        title=episode_title,
+                        episode_number=i,
+                        url=full_url,
+                        thumbnail=thumbnail_url,
+                        description=description,
+                        duration=duration,
+                        dash_url=None,  # Will be filled if needed
+                        m3u8_url=None,  # Will be filled if needed
+                        is_valid=True
+                    )
                     
-                    if episode_info:
-                        episode_info.episode_number = i
-                        episode_info.title = episode_title
-                        episodes.append(episode_info)
-                        
-                        if episode_info.is_valid:
-                            print(f"✅ Episode {i}: {episode_title} - Valid")
-                        else:
-                            print(f"❌ Episode {i}: {episode_title} - Invalid")
-                    else:
-                        print(f"❌ Episode {i}: {episode_title} - Failed to extract")
+                    episodes.append(episode_info)
+                    print(f"✅ Episode {i}: {episode_title} - Valid with metadata")
                         
                 except Exception as ep_error:
                     print(f"❌ Episode {i}: {episode_title} - Error: {ep_error}")
