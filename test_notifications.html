@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Notifications</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto p-8">
+        <h1 class="text-2xl font-bold mb-4">Test Notification Display</h1>
+        
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-lg font-semibold mb-4">Sample Notification Data</h2>
+            <div id="test-notifications"></div>
+        </div>
+        
+        <script>
+            // Test data yang sesuai dengan database
+            const testNotifications = [
+                {
+                    id: 5,
+                    title: "Episode Baru Tersedia!",
+                    message: "Episode 1124 dari One Piece - Episode 1124 sudah dapat ditonton",
+                    type: "episode",
+                    is_read: false,
+                    is_global: true,
+                    action_url: "/anime/11",
+                    icon: "play-circle",
+                    created_at: "2025-07-02T07:17:18.256409",
+                    read_at: null
+                },
+                {
+                    id: 4,
+                    title: "Anime Baru Ditambahkan!",
+                    message: "One Piece telah ditambahkan ke platform",
+                    type: "content",
+                    is_read: false,
+                    is_global: true,
+                    action_url: "/anime/11",
+                    icon: "plus-circle",
+                    created_at: "2025-07-02T07:15:24.873866",
+                    read_at: null
+                },
+                {
+                    id: 3,
+                    title: "Episode Baru Tersedia!",
+                    message: "Episode 3 dari Super Cube - Episode 3 sudah dapat ditonton",
+                    type: "episode",
+                    is_read: true,
+                    is_global: true,
+                    action_url: "/anime/10",
+                    icon: "play-circle",
+                    created_at: "2025-07-02T06:51:54.143280",
+                    read_at: "2025-07-02T06:52:19.192960"
+                }
+            ];
+            
+            // Copy function from notifications.js
+            function getTimeAgo(dateString) {
+                if (!dateString) return '';
+                
+                try {
+                    const date = new Date(dateString);
+                    const now = new Date();
+                    
+                    if (isNaN(date.getTime())) {
+                        console.warn('Invalid date string:', dateString);
+                        return 'Waktu tidak valid';
+                    }
+                    
+                    const diffInSeconds = Math.floor((now - date) / 1000);
+                    
+                    if (diffInSeconds < 0) return 'Di masa depan';
+                    if (diffInSeconds < 60) return 'Baru saja';
+                    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} menit yang lalu`;
+                    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} jam yang lalu`;
+                    if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} hari yang lalu`;
+                    
+                    return date.toLocaleDateString('id-ID');
+                } catch (error) {
+                    console.error('Error parsing date:', error, dateString);
+                    return 'Waktu tidak valid';
+                }
+            }
+            
+            function getNotificationTypeClass(type) {
+                const typeClasses = {
+                    'info': 'text-blue-500',
+                    'success': 'text-green-500',
+                    'warning': 'text-yellow-500',
+                    'error': 'text-red-500',
+                    'episode': 'text-purple-500',
+                    'content': 'text-indigo-500'
+                };
+                return typeClasses[type] || 'text-gray-500';
+            }
+            
+            function createNotificationHTML(notification) {
+                const createdTime = getTimeAgo(notification.created_at);
+                const isUnread = !notification.is_read;
+                const typeClass = getNotificationTypeClass(notification.type);
+                
+                // Show read time if notification has been read
+                let timeInfo = `Dibuat ${createdTime}`;
+                if (notification.is_read && notification.read_at) {
+                    const readTime = getTimeAgo(notification.read_at);
+                    timeInfo += ` • Dibaca ${readTime}`;
+                }
+                
+                return `
+                    <div class="notification-item p-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors duration-150 ${isUnread ? 'bg-blue-50' : 'bg-gray-50'} mb-2 rounded">
+                        <div class="flex items-start space-x-3">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-${notification.icon} ${typeClass} text-lg"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center justify-between">
+                                    <p class="text-sm font-medium text-gray-900 truncate">
+                                        ${notification.title}
+                                    </p>
+                                    ${isUnread ? '<div class="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0" title="Belum dibaca"></div>' : '<div class="w-2 h-2 bg-gray-400 rounded-full flex-shrink-0" title="Sudah dibaca"></div>'}
+                                </div>
+                                <p class="text-sm text-gray-600 mt-1">
+                                    ${notification.message}
+                                </p>
+                                <p class="text-xs text-gray-400 mt-1">
+                                    ${timeInfo}
+                                </p>
+                                <p class="text-xs text-blue-600 mt-1">
+                                    Status: ${notification.is_read ? 'Sudah dibaca' : 'Belum dibaca'}
+                                    ${notification.read_at ? ` pada ${new Date(notification.read_at).toLocaleString('id-ID')}` : ''}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Render test notifications
+            document.getElementById('test-notifications').innerHTML = testNotifications.map(createNotificationHTML).join('');
+            
+            console.log('Test notifications rendered');
+            console.log('Notification data:', testNotifications);
+        </script>
+    </div>
+</body>
+</html>

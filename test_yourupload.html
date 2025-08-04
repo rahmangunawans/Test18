@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>YouUpload Test</title>
+</head>
+<body>
+    <h1>Testing YouUpload Embed</h1>
+    
+    <h2>Method 1: Direct iframe</h2>
+    <iframe 
+        src="https://www.yourupload.com/embed/3f3phMUGr80Q" 
+        width="800" 
+        height="450" 
+        frameborder="0" 
+        allowfullscreen>
+    </iframe>
+    
+    <h2>Method 2: With different attributes</h2>
+    <iframe 
+        src="https://www.yourupload.com/embed/3f3phMUGr80Q" 
+        width="800" 
+        height="450" 
+        frameborder="0" 
+        allowfullscreen
+        allow="autoplay; encrypted-media"
+        referrerpolicy="no-referrer-when-downgrade">
+    </iframe>
+    
+    <h2>Method 3: Direct link</h2>
+    <a href="https://www.yourupload.com/embed/3f3phMUGr80Q" target="_blank">Open YouUpload Embed</a>
+    
+    <script>
+        console.log('Testing YouUpload embed page loaded');
+        
+        // Test iframe loading
+        const iframes = document.querySelectorAll('iframe');
+        iframes.forEach((iframe, index) => {
+            iframe.onload = () => {
+                console.log(`Iframe ${index + 1} loaded`);
+                try {
+                    console.log(`Iframe ${index + 1} URL:`, iframe.contentWindow.location.href);
+                } catch (e) {
+                    console.log(`Iframe ${index + 1} cross-origin restriction (normal)`);
+                }
+            };
+            iframe.onerror = () => {
+                console.error(`Iframe ${index + 1} failed to load`);
+            };
+        });
+    </script>
+</body>
+</html>

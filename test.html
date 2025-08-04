@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AniFlix Video Player Test</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <!-- Plyr CSS -->
+  <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
+  <style>
+    body {
+      background: #0f172a;
+      color: #fff;
+      font-family: 'Poppins', sans-serif;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .container {
+      max-width: 1000px;
+      width: 100%;
+    }
+
+    .video-container {
+      position: relative;
+      width: 100%;
+      background: #1e293b;
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+
+    video {
+      width: 100%;
+      border-radius: 12px;
+      background: #000;
+    }
+
+    .server-buttons {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .server-btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      background: #374151;
+      color: white;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .server-btn:hover {
+      background: #4b5563;
+    }
+
+    .server-btn.active {
+      background: #ef4444;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+      color: #ef4444;
+    }
+
+    .info {
+      background: #1e293b;
+      padding: 20px;
+      border-radius: 12px;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>AniFlix Video Player Test</h1>
+    
+    <div class="server-buttons">
+      <button class="server-btn active" onclick="switchServer('m3u8', 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8')">
+        M3U8 Server
+      </button>
+      <button class="server-btn" onclick="switchServer('embed', 'https://www.youtube.com/embed/ScMzIvxBSi4')">
+        Embed Server
+      </button>
+      <button class="server-btn" onclick="switchServer('direct', 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4')">
+        Direct Video
+      </button>
+    </div>
+    
+    <div class="video-container">
+      <video id="player" controls playsinline crossorigin 
+             poster="https://cdn.plyr.io/static/demo/View_From_A_Blue_Moon_Trailer-HD.jpg">
+        <track kind="captions" label="English" srclang="en" 
+               src="https://cdn.plyr.io/static/demo/View_From_A_Blue_Moon_Trailer-HD.en.vtt" default>
+      </video>
+    </div>
+
+    <div class="info">
+      <h3>Video Player Test Information</h3>
+      <p>This test page demonstrates the working video player functionality for AniFlix.</p>
+      <p>Current status: <span id="status">Loading...</span></p>
+      <p>Player type: <span id="player-type">-</span></p>
+    </div>
+  </div>
+
+  <!-- Plyr.js -->
+  <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
+  <!-- hls.js -->
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <script>
+    console.log('🎬 AniFlix Video Player Test Starting...');
+    
+    let player;
+    let hls;
+    
+    // Initialize with default M3U8 source
+    const defaultSource = 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8';
+    
+    function updateStatus(message, type = '') {
+      document.getElementById('status').textContent = message;
+      document.getElementById('player-type').textContent = type;
+      console.log('Status:', message, type);
+    }
+    
+    function initializePlayer(source = defaultSource) {
+      const video = document.getElementById('player');
+      
+      if (!video) {
+        updateStatus('Error: Video element not found', 'Error');
+        return;
+      }
+      
+      // Clean up existing player and HLS
+      if (player) {
+        player.destroy();
+        player = null;
+      }
+      if (hls) {
+        hls.destroy();
+        hls = null;
+      }
+      
+      updateStatus('Initializing player...', 'Loading');
+      console.log('🎬 Initializing player with source:', source);
+      
+      if (Hls.isSupported()) {
+        hls = new Hls({
+          debug: false,
+          enableWorker: true,
+          lowLatencyMode: true,
+        });
+        
+        hls.loadSource(source);
+        hls.attachMedia(video);
+        
+        hls.on(Hls.Events.MANIFEST_PARSED, function() {
+          console.log('✅ HLS manifest parsed successfully');
+          
+          player = new Plyr(video, {
+            captions: { active: true, update: true, language: 'en' },
+            controls: [
+              'play-large', 'play', 'progress', 'current-time', 'duration', 
+              'mute', 'volume', 'captions', 'settings', 'pip', 'airplay', 'fullscreen'
+            ],
+            settings: ['captions', 'quality', 'speed'],
+            quality: { default: 720, options: [4320, 2880, 2160, 1440, 1080, 720, 576, 480, 360, 240] }
+          });
+          
+          window.player = player;
+          window.hls = hls;
+          
+          updateStatus('HLS + Plyr initialized successfully', 'HLS');
+          console.log('✅ Plyr + HLS.js initialized successfully');
+        });
+        
+        hls.on(Hls.Events.ERROR, function(event, data) {
+          console.error('❌ HLS Error:', data);
+          updateStatus('HLS Error: ' + data.details, 'Error');
+          
+          if (data.fatal) {
+            switch(data.type) {
+              case Hls.ErrorTypes.NETWORK_ERROR:
+                console.log('🔄 Trying to recover network error');
+                hls.startLoad();
+                break;
+              case Hls.ErrorTypes.MEDIA_ERROR:
+                console.log('🔄 Trying to recover media error');
+                hls.recoverMediaError();
+                break;
+              default:
+                hls.destroy();
+                updateStatus('Fatal error, cannot recover', 'Error');
+                break;
+            }
+          }
+        });
+        
+      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        // Safari native HLS support
+        video.src = source;
+        player = new Plyr(video, {
+          captions: { active: true, update: true, language: 'en' }
+        });
+        window.player = player;
+        updateStatus('Native HLS player initialized', 'Native');
+        console.log('✅ Native HLS player initialized');
+        
+      } else {
+        updateStatus('Your browser does not support HLS', 'Error');
+        console.error('❌ HLS not supported');
+      }
+    }
+    
+    function switchServer(type, url) {
+      console.log('🔄 Switching to server:', type, url);
+      
+      // Update active button
+      document.querySelectorAll('.server-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+      
+      if (type === 'embed') {
+        // Handle embed URLs (like YouTube)
+        const video = document.getElementById('player');
+        const container = video.parentElement;
+        
+        container.innerHTML = `<iframe src="${url}" width="100%" height="400" frameborder="0" allowfullscreen></iframe>`;
+        updateStatus('Embed player loaded', 'Embed');
+        
+      } else if (type === 'direct') {
+        // Handle direct video URLs
+        const video = document.getElementById('player');
+        video.src = url;
+        
+        if (player) {
+          player.destroy();
+        }
+        
+        player = new Plyr(video);
+        window.player = player;
+        updateStatus('Direct video player loaded', 'Direct');
+        
+      } else {
+        // Handle M3U8 URLs
+        initializePlayer(url);
+      }
+    }
+    
+    // Initialize when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('✅ DOM loaded, checking for libraries...');
+      
+      if (typeof Plyr === 'undefined') {
+        updateStatus('Error: Plyr library not loaded', 'Error');
+        return;
+      }
+      
+      if (typeof Hls === 'undefined') {
+        updateStatus('Error: HLS.js library not loaded', 'Error');
+        return;
+      }
+      
+      updateStatus('Libraries loaded, initializing...', 'Loading');
+      initializePlayer();
+    });
+  </script>
+</body>
+</html>

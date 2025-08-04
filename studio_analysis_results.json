@@ -1,0 +1,348 @@
+{
+  "analysis_date": "2025-07-30",
+  "total_studios_analyzed": 57,
+  "important_studios": 39,
+  "studio_mapping": {
+    "A-1 Pictures": {
+      "tier": "S",
+      "anime_count": 21,
+      "avg_score": 77.6,
+      "popular_titles": [
+        "Sword Art Online",
+        "Your lie in April",
+        "ERASED",
+        "Kaguya-sama: Love is War",
+        "The Seven Deadly Sins"
+      ]
+    },
+    "bones": {
+      "tier": "S",
+      "anime_count": 20,
+      "avg_score": 79.8,
+      "popular_titles": [
+        "My Hero Academia",
+        "Fullmetal Alchemist: Brotherhood",
+        "My Hero Academia Season 2",
+        "Mob Psycho 100",
+        "My Hero Academia Season 3"
+      ]
+    },
+    "MAPPA": {
+      "tier": "S",
+      "anime_count": 16,
+      "avg_score": 80.9,
+      "popular_titles": [
+        "JUJUTSU KAISEN",
+        "Attack on Titan Final Season",
+        "Chainsaw Man",
+        "Kakegurui",
+        "JUJUTSU KAISEN Season 2"
+      ]
+    },
+    "MADHOUSE": {
+      "tier": "S",
+      "anime_count": 16,
+      "avg_score": 80.1,
+      "popular_titles": [
+        "Death Note",
+        "Hunter x Hunter (2011)",
+        "One-Punch Man",
+        "No Game, No Life",
+        "Parasyte -the maxim-"
+      ]
+    },
+    "J.C.STAFF": {
+      "tier": "S",
+      "anime_count": 14,
+      "avg_score": 76.2,
+      "popular_titles": [
+        "Toradora!",
+        "One-Punch Man Season 2",
+        "Food Wars!",
+        "Is It Wrong to Try to Pick Up Girls in a Dungeon?",
+        "The Disastrous Life of Saiki K."
+      ]
+    },
+    "Production I.G": {
+      "tier": "S",
+      "anime_count": 12,
+      "avg_score": 81.1,
+      "popular_titles": [
+        "HAIKYU!!",
+        "HAIKYU!! 2nd Season",
+        "HAIKYU!! 3rd Season",
+        "PSYCHO-PASS",
+        "HAIKYU!! TO THE TOP"
+      ]
+    },
+    "WIT STUDIO": {
+      "tier": "S",
+      "anime_count": 11,
+      "avg_score": 82.9,
+      "popular_titles": [
+        "Attack on Titan",
+        "Attack on Titan Season 2",
+        "Attack on Titan Season 3",
+        "Attack on Titan Season 3 Part 2",
+        "SPY x FAMILY"
+      ]
+    },
+    "CloverWorks": {
+      "tier": "S",
+      "anime_count": 11,
+      "avg_score": 77.7,
+      "popular_titles": [
+        "The Promised Neverland",
+        "Rascal Does Not Dream of Bunny Girl Senpai",
+        "SPY x FAMILY",
+        "Horimiya",
+        "DARLING in the FRANXX"
+      ]
+    },
+    "Kyoto Animation": {
+      "tier": "S",
+      "anime_count": 10,
+      "avg_score": 80.4,
+      "popular_titles": [
+        "A Silent Voice",
+        "Violet Evergarden",
+        "Hyouka",
+        "Love, Chunibyo & Other Delusions",
+        "Miss Kobayashi's Dragon Maid"
+      ]
+    },
+    "ufotable": {
+      "tier": "S",
+      "anime_count": 9,
+      "avg_score": 82.2,
+      "popular_titles": [
+        "Demon Slayer: Kimetsu no Yaiba",
+        "Demon Slayer -Kimetsu no Yaiba- The Movie: Mugen Train",
+        "Demon Slayer: Kimetsu no Yaiba Entertainment District Arc",
+        "Fate/Zero",
+        "Demon Slayer: Kimetsu no Yaiba Mugen Train Arc"
+      ]
+    },
+    "Studio Pierrot": {
+      "tier": "S",
+      "anime_count": 9,
+      "avg_score": 70.7,
+      "popular_titles": [
+        "Tokyo Ghoul",
+        "Naruto",
+        "Naruto: Shippuden",
+        "Black Clover",
+        "Bleach"
+      ]
+    },
+    "WHITE FOX": {
+      "tier": "S",
+      "anime_count": 8,
+      "avg_score": 79.9,
+      "popular_titles": [
+        "Re:ZERO -Starting Life in Another World-",
+        "Steins;Gate",
+        "Akame ga Kill!",
+        "The Devil is a Part-Timer!",
+        "Re:ZERO -Starting Life in Another World- Season 2"
+      ]
+    },
+    "David Production": {
+      "tier": "A",
+      "anime_count": 7,
+      "avg_score": 80.0,
+      "popular_titles": [
+        "JoJo's Bizarre Adventure (TV)",
+        "Fire Force",
+        "JoJo's Bizarre Adventure: Stardust Crusaders",
+        "JoJo's Bizarre Adventure: Diamond is Unbreakable",
+        "JoJo's Bizarre Adventure: Golden Wind"
+      ]
+    },
+    "Lerche": {
+      "tier": "A",
+      "anime_count": 6,
+      "avg_score": 77.0,
+      "popular_titles": [
+        "Assassination Classroom",
+        "Classroom of the Elite",
+        "Assassination Classroom 2",
+        "Toilet-bound Hanako-kun",
+        "Danganronpa: The Animation"
+      ]
+    },
+    "TMS Entertainment": {
+      "tier": "A",
+      "anime_count": 5,
+      "avg_score": 77.6,
+      "popular_titles": [
+        "Dr. STONE",
+        "Dr. STONE: STONE WARS",
+        "Rent-a-Girlfriend",
+        "Fruits Basket (2019)",
+        "ReLIFE"
+      ]
+    },
+    "Sunrise": {
+      "tier": "B",
+      "anime_count": 4,
+      "avg_score": 85.8,
+      "popular_titles": [
+        "Code Geass: Lelouch of the Rebellion",
+        "Cowboy Bebop",
+        "Code Geass: Lelouch of the Rebellion R2",
+        "Gintama"
+      ]
+    },
+    "Studio Ghibli": {
+      "tier": "B",
+      "anime_count": 4,
+      "avg_score": 84.0,
+      "popular_titles": [
+        "Spirited Away",
+        "Howl‘s Moving Castle",
+        "Princess Mononoke",
+        "My Neighbor Totoro"
+      ]
+    },
+    "8-bit": {
+      "tier": "B",
+      "anime_count": 4,
+      "avg_score": 81.2,
+      "popular_titles": [
+        "That Time I Got Reincarnated as a Slime",
+        "That Time I Got Reincarnated as a Slime Season 2",
+        "BLUE LOCK",
+        "That Time I Got Reincarnated as a Slime Season 2 Part 2"
+      ]
+    },
+    "Shaft": {
+      "tier": "B",
+      "anime_count": 4,
+      "avg_score": 80.2,
+      "popular_titles": [
+        "Bakemonogatari",
+        "Puella Magi Madoka Magica",
+        "Nisekoi",
+        "March comes in like a lion"
+      ]
+    },
+    "CoMix Wave": {
+      "tier": "B",
+      "anime_count": 4,
+      "avg_score": 78.2,
+      "popular_titles": [
+        "Your Name.",
+        "Weathering With You",
+        "The Garden of Words",
+        "5 Centimeters per Second"
+      ]
+    },
+    "Brain's Base": {
+      "tier": "B",
+      "anime_count": 4,
+      "avg_score": 77.5,
+      "popular_titles": [
+        "My Teen Romantic Comedy SNAFU",
+        "To Your Eternity",
+        "Durarara!!",
+        "My Little Monster"
+      ]
+    },
+    "Gainax": {
+      "tier": "B",
+      "anime_count": 3,
+      "avg_score": 84.3,
+      "popular_titles": [
+        "Neon Genesis Evangelion",
+        "Gurren Lagann",
+        "Neon Genesis Evangelion: The End of Evangelion"
+      ]
+    },
+    "Studio Bind": {
+      "tier": "B",
+      "anime_count": 3,
+      "avg_score": 82.7,
+      "popular_titles": [
+        "Mushoku Tensei: Jobless Reincarnation",
+        "Mushoku Tensei: Jobless Reincarnation Cour 2",
+        "Mushoku Tensei: Jobless Reincarnation Season 2"
+      ]
+    },
+    "Doga Kobo": {
+      "tier": "B",
+      "anime_count": 3,
+      "avg_score": 79.3,
+      "popular_titles": [
+        "Oshi No Ko",
+        "Plastic Memories",
+        "Monthly Girls' Nozaki-kun"
+      ]
+    },
+    "TRIGGER": {
+      "tier": "B",
+      "anime_count": 3,
+      "avg_score": 77.3,
+      "popular_titles": [
+        "DARLING in the FRANXX",
+        "Kill la Kill",
+        "Cyberpunk: Edgerunners"
+      ]
+    },
+    "Kinema Citrus": {
+      "tier": "B",
+      "anime_count": 3,
+      "avg_score": 75.7,
+      "popular_titles": [
+        "The Rising of the Shield Hero",
+        "Made in Abyss",
+        "The Rising of the Shield Hero Season 2"
+      ]
+    },
+    "P.A.WORKS": {
+      "tier": "B",
+      "anime_count": 3,
+      "avg_score": 74.0,
+      "popular_titles": [
+        "Angel Beats!",
+        "Charlotte",
+        "Another"
+      ]
+    },
+    "Telecom Animation Film": {
+      "tier": "B",
+      "anime_count": 3,
+      "avg_score": 72.3,
+      "popular_titles": [
+        "Tower of God",
+        "DON'T TOY WITH ME, MISS NAGATORO",
+        "Orange"
+      ]
+    },
+    "SILVER LINK.": {
+      "tier": "B",
+      "anime_count": 3,
+      "avg_score": 69.7,
+      "popular_titles": [
+        "The Misfit of Demon King Academy: History’s Strongest Demon King Reincarnates and Goes to School with His Descendants",
+        "Chivalry of a Failed Knight",
+        "Masamune-kun's Revenge"
+      ]
+    },
+    "OLM": {
+      "tier": "C",
+      "anime_count": 2,
+      "avg_score": 82.5,
+      "popular_titles": [
+        "Komi Can’t Communicate",
+        "The Apothecary Diaries"
+      ]
+    }
+  },
+  "tier_breakdown": {
+    "tier_s": 12,
+    "tier_a": 3,
+    "tier_b": 14,
+    "tier_c": 1
+  }
+}
