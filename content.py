@@ -118,8 +118,17 @@ def watch_content_episode(content_id, episode_number):
 @content_bp.route('/watch/<int:episode_id>')
 @login_required
 def watch_episode(episode_id):
-    episode = Episode.query.get_or_404(episode_id)
-    content = episode.content
+    try:
+        episode = Episode.query.get_or_404(episode_id)
+        content = episode.content
+        
+        if not content:
+            flash('Content not found for this episode.', 'error')
+            return redirect(url_for('main.index'))
+    except Exception as e:
+        logging.error(f"Error loading episode {episode_id}: {e}")
+        flash('Episode not found.', 'error')
+        return redirect(url_for('main.index'))
     
     # Check if user can watch this episode
     can_watch_full = current_user.can_watch_full_episode(episode.episode_number)
@@ -139,12 +148,19 @@ def watch_episode(episode_id):
         db.session.add(watch_history)
         db.session.commit()
     
-    # Get similar anime (same genre)
-    similar_anime = Content.query.filter(
-        Content.genre.contains(content.genre.split(', ')[0]),
-        Content.id != content.id,
-        Content.content_type == 'anime'
-    ).order_by(Content.rating.desc()).limit(6).all()
+    # Get similar anime (same genre) - handle case where genre might be None
+    similar_anime = []
+    if content.genre:
+        try:
+            first_genre = content.genre.split(', ')[0]
+            similar_anime = Content.query.filter(
+                Content.genre.contains(first_genre),
+                Content.id != content.id,
+                Content.content_type == 'anime'
+            ).order_by(Content.rating.desc()).limit(6).all()
+        except Exception as e:
+            logging.error(f"Error getting similar anime: {e}")
+            similar_anime = []
     
     # Get trending anime (highest rated recent content)
     trending_anime = Content.query.filter(
@@ -165,16 +181,21 @@ def watch_episode(episode_id):
     else:
         progress_percentage = 0
     
-    return render_template('video_player.html', 
-                         episode=episode, 
-                         content=content,
-                         can_watch_full=can_watch_full,
-                         max_watch_time=max_watch_time,
-                         watch_history=watch_history,
-                         similar_anime=similar_anime,
-                         trending_anime=trending_anime,
-                         recommended_movies=recommended_movies,
-                         progress_percentage=progress_percentage)
+    try:
+        return render_template('video_player.html', 
+                             episode=episode, 
+                             content=content,
+                             can_watch_full=can_watch_full,
+                             max_watch_time=max_watch_time,
+                             watch_history=watch_history,
+                             similar_anime=similar_anime,
+                             trending_anime=trending_anime,
+                             recommended_movies=recommended_movies,
+                             progress_percentage=progress_percentage)
+    except Exception as e:
+        logging.error(f"Error rendering video player for episode {episode_id}: {e}")
+        flash(f'Error loading video player: {str(e)}', 'error')
+        return redirect(url_for('main.index'))
 
 
 
