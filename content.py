@@ -132,11 +132,10 @@ def watch_episode(episode_id):
     ).first()
     
     if not watch_history:
-        watch_history = WatchHistory(
-            user_id=current_user.id,
-            content_id=content.id,
-            episode_id=episode_id
-        )
+        watch_history = WatchHistory()
+        watch_history.user_id = current_user.id
+        watch_history.content_id = content.id
+        watch_history.episode_id = episode_id
         db.session.add(watch_history)
         db.session.commit()
     
@@ -159,7 +158,8 @@ def watch_episode(episode_id):
     ).order_by(Content.rating.desc()).limit(5).all()
     
     # Calculate progress percentage correctly
-    total_episodes = content.total_episodes if content.total_episodes and content.total_episodes > 0 else len(content.episodes)
+    episodes_count = len(content.episodes) if content.episodes else 0
+    total_episodes = content.total_episodes if content.total_episodes and content.total_episodes > 0 else episodes_count
     if total_episodes > 0:
         progress_percentage = min(100, round((episode.episode_number / total_episodes) * 100))
     else:
@@ -218,11 +218,10 @@ def update_watch_progress():
     ).first()
     
     if not watch_history:
-        watch_history = WatchHistory(
-            user_id=current_user.id,
-            content_id=episode.content_id,
-            episode_id=episode_id
-        )
+        watch_history = WatchHistory()
+        watch_history.user_id = current_user.id
+        watch_history.content_id = episode.content_id  
+        watch_history.episode_id = episode_id
         db.session.add(watch_history)
     
     # Store watch_time as integer (seconds)

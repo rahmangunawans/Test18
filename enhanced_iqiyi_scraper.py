@@ -88,8 +88,13 @@ class EnhancedIQiyiScraper:
             return None
 
         try:
-            json_data = script_tag.string.strip()
-            self._player_data = json.loads(json_data)
+            json_data = script_tag.string
+            if json_data:
+                json_data = json_data.strip()
+                self._player_data = json.loads(json_data)
+            else:
+                print("❌ Script tag has no content")
+                return None
             print("✅ Player data loaded successfully")
             return self._player_data
         except json.JSONDecodeError as e:
