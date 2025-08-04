@@ -452,21 +452,33 @@ function showScrapeResults() {
         
         const validText = episode.is_valid ? 'Valid M3U8' : 'No M3U8';
         
+        // Format duration for display
+        const durationDisplay = episode.duration ? 
+            `<span class="inline-flex items-center text-xs text-blue-400"><i class="fas fa-clock mr-1"></i>${episode.duration}</span>` : '';
+        
+        // Create thumbnail display
+        const thumbnailDisplay = episode.thumbnail_url ? 
+            `<img src="${episode.thumbnail_url}" alt="Episode ${episode.episode_number}" class="w-20 h-12 object-cover rounded border border-gray-600" onerror="this.style.display='none'">` : 
+            '<div class="w-20 h-12 bg-gray-600 rounded flex items-center justify-center text-xs text-gray-400"><i class="fas fa-image"></i></div>';
+        
         resultsDiv.innerHTML += `
             <div class="bg-gray-700 p-4 rounded-lg">
-                <div class="flex items-center gap-3">
+                <div class="flex items-start gap-3">
                     <input type="checkbox" id="episode_${index}" checked 
-                           class="w-4 h-4 text-blue-600 bg-gray-600 border-gray-500 rounded focus:ring-blue-500">
-                    <div class="flex-1">
-                        <div class="flex items-center gap-2 mb-1">
+                           class="w-4 h-4 text-blue-600 bg-gray-600 border-gray-500 rounded focus:ring-blue-500 mt-1">
+                    ${thumbnailDisplay}
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 mb-2 flex-wrap">
                             <h5 class="font-medium text-white">Episode ${episode.episode_number || 'N/A'}: ${episode.title}</h5>
                             ${validIcon}
                             <span class="text-xs ${episode.is_valid ? 'text-green-400' : 'text-yellow-400'}">${validText}</span>
+                            ${durationDisplay}
                         </div>
-                        ${episode.description ? `<p class="text-sm text-gray-300 mb-2">${episode.description.substring(0, 100)}...</p>` : ''}
-                        <div class="text-xs text-gray-400">
-                            ${episode.thumbnail_url ? '<i class="fas fa-image mr-1"></i>Thumbnail tersedia' : ''}
-                            ${episode.m3u8_content ? '<i class="fas fa-video ml-3 mr-1"></i>M3U8 content tersedia' : ''}
+                        ${episode.description ? `<p class="text-sm text-gray-300 mb-2 line-clamp-2">${episode.description}</p>` : '<p class="text-sm text-gray-500 italic mb-2">No description available</p>'}
+                        <div class="text-xs text-gray-400 flex flex-wrap gap-3">
+                            ${episode.thumbnail_url ? '<span class="inline-flex items-center"><i class="fas fa-image mr-1 text-green-400"></i>Thumbnail: Available</span>' : '<span class="inline-flex items-center"><i class="fas fa-image mr-1 text-gray-500"></i>Thumbnail: None</span>'}
+                            ${episode.url ? '<span class="inline-flex items-center"><i class="fas fa-link mr-1 text-blue-400"></i>Episode URL: Available</span>' : ''}
+                            ${episode.dash_url ? '<span class="inline-flex items-center"><i class="fas fa-video mr-1 text-purple-400"></i>DASH URL: Available</span>' : ''}
                         </div>
                     </div>
                 </div>
