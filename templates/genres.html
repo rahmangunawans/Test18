@@ -14,66 +14,34 @@
         <!-- Genres Grid -->
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
         {% for genre in genres %}
-        <a href="{{ url_for('content.genre_content', genre_name=genre) }}" 
-           class="group bg-gradient-to-br from-gray-800 to-gray-900 rounded-lg p-6 hover:from-red-900 hover:to-red-800 transition-all duration-300 transform hover:scale-105">
-            <div class="text-center">
-                <div class="text-3xl mb-4 flex justify-center">
-                    {% if genre == 'Action' %}
-                        <svg class="w-12 h-12 text-red-500" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12 2L13.09 8.26L17 9L13.09 9.74L12 16L10.91 9.74L7 9L10.91 8.26L12 2M5 9.5L6.5 12.5L9.5 14L6.5 15.5L5 18.5L3.5 15.5L0.5 14L3.5 12.5L5 9.5Z"/>
-                        </svg>
-                    {% elif genre == 'Comedy' %}
-                        <svg class="w-12 h-12 text-yellow-500" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12,2C13.1,2 14,2.9 14,4C14,5.1 13.1,6 12,6C10.9,6 10,5.1 10,4C10,2.9 10.9,2 12,2M21,9V7L15,1H5C3.9,1 3,1.9 3,3V21C3,22.1 3.9,23 5,23H19C20.1,23 21,22.1 21,21V9M12,19C8.1,19 5,15.9 5,12S8.1,5 12,5 19,8.1 19,12 15.9,19 12,19M12,17C14.8,17 17,14.8 17,12S14.8,7 12,7 7,9.2 7,12 9.2,17 12,17Z"/>
-                        </svg>
-                    {% elif genre == 'Drama' %}
-                        <svg class="w-12 h-12 text-purple-500" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12,2A3,3 0 0,1 15,5V11A3,3 0 0,1 12,14A3,3 0 0,1 9,11V5A3,3 0 0,1 12,2M19,11C19,14.53 16.39,17.44 13,17.93V21H11V17.93C7.61,17.44 5,14.53 5,11H7A5,5 0 0,0 12,16A5,5 0 0,0 17,11H19Z"/>
-                        </svg>
-                    {% elif genre == 'Romance' %}
-                        <svg class="w-12 h-12 text-pink-500" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12,21.35L10.55,20.03C5.4,15.36 2,12.27 2,8.5 2,5.41 4.42,3 7.5,3C9.24,3 10.91,3.81 12,5.08C13.09,3.81 14.76,3 16.5,3C19.58,3 22,5.41 22,8.5C22,12.27 18.6,15.36 13.45,20.03L12,21.35Z"/>
-                        </svg>
-                    {% elif genre == 'Horror' %}
-                        <svg class="w-12 h-12 text-gray-500" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12,2A9,9 0 0,0 3,11V19A2,2 0 0,0 5,21H8.5V15.5H9.5V21H14.5V15.5H15.5V21H19A2,2 0 0,0 21,19V11A9,9 0 0,0 12,2M9,12A1.5,1.5 0 0,1 7.5,10.5A1.5,1.5 0 0,1 9,9A1.5,1.5 0 0,1 10.5,10.5A1.5,1.5 0 0,1 9,12M15,12A1.5,1.5 0 0,1 13.5,10.5A1.5,1.5 0 0,1 15,9A1.5,1.5 0 0,1 16.5,10.5A1.5,1.5 0 0,1 15,12Z"/>
-                        </svg>
-                    {% elif genre == 'Fantasy' %}
-                        <svg class="w-12 h-12 text-blue-500" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M7.5,5.6L5,7L6.4,4.5L5,2L7.5,3.4L10,2L8.6,4.5L10,7L7.5,5.6M19.5,15.4L22,14L20.6,16.5L22,19L19.5,17.6L17,19L18.4,16.5L17,14L19.5,15.4M22,2L20.6,4.5L22,7L19.5,5.6L17,7L18.4,4.5L17,2L19.5,3.4L22,2M13.34,12.78L15.78,10.34L13.66,8.22L11.22,10.66L13.34,12.78M14.37,7.29L16.71,9.63C17.1,10 17.1,10.65 16.71,11.04L5.04,22.71C4.65,23.1 4,23.1 3.63,22.71L1.29,20.37C0.9,20 0.9,19.35 1.29,18.96L12.96,7.29C13.35,6.9 14,6.9 14.37,7.29Z"/>
-                        </svg>
-                    {% elif genre == 'Adventure' %}
-                        <svg class="w-12 h-12 text-green-500" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M14,6L10.25,11L13.1,14.8L11.5,16C9.81,13.75 7,10 7,10L1,18H23L14,6Z"/>
-                        </svg>
-                    {% elif genre == 'Sci-Fi' %}
-                        <svg class="w-12 h-12 text-cyan-500" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M2.81 14.12L5.64 11.29L8.17 10.79C11.39 6.41 17.55 4.22 19.78 4.22C19.78 6.45 17.59 12.61 13.21 15.83L12.71 18.36L9.88 21.19L9.17 17.66C7.76 17.66 7.76 17.66 7.05 16.95S6.34 16.24 6.34 14.83L2.81 14.12M5.64 16.95L7.05 18.36L4.93 19.78L3.52 18.36L5.64 16.95M14.83 9.17L16.24 7.76L18.36 9.88L16.95 11.29L14.83 9.17Z"/>
-                        </svg>
-                    {% elif genre == 'Thriller' %}
-                        <svg class="w-12 h-12 text-orange-500" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M11,2V22C5.9,21.5 2,17.2 2,12S5.9,2.5 11,2M13,2V22C18.1,21.5 22,17.2 22,12S18.1,2.5 13,2M11,11.5V20.5C9.8,20.1 8.7,19.2 8,18H11V11.5M13,20.5V11.5H16C15.3,19.2 14.2,20.1 13,20.5Z"/>
-                        </svg>
-                    {% elif genre == 'Mystery' %}
-                        <svg class="w-12 h-12 text-indigo-500" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M15.5,12C18,12 20,14 20,16.5C20,17.38 19.75,18.21 19.31,18.9L22.39,22L21,23.39L17.88,20.32C17.19,20.75 16.37,21 15.5,21C13,21 11,19 11,16.5C11,14 13,12 15.5,12M15.5,14A2.5,2.5 0 0,0 13,16.5A2.5,2.5 0 0,0 15.5,19A2.5,2.5 0 0,0 18,16.5A2.5,2.5 0 0,0 15.5,14M6.5,2H17.5C18.3,2 19,2.7 19,3.5V11H17V4H7V18H10V20H6.5C5.7,20 5,19.3 5,18.5V3.5C5,2.7 5.7,2 6.5,2Z"/>
-                        </svg>
-                    {% elif genre == 'School' %}
-                        <svg class="w-12 h-12 text-blue-400" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12,3L1,9L12,15L21,10.09V17H23V9M5,13.18V17.18L12,21L19,17.18V13.18L12,17L5,13.18Z"/>
-                        </svg>
-                    {% elif genre == 'Supernatural' %}
-                        <svg class="w-12 h-12 text-violet-500" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12,2A3,3 0 0,1 15,5V11A3,3 0 0,1 12,14A3,3 0 0,1 9,11V5A3,3 0 0,1 12,2M19,11C19,14.53 16.39,17.44 13,17.93V21H11V17.93C7.61,17.44 5,14.53 5,11H7A5,5 0 0,0 12,16A5,5 0 0,0 17,11H19Z"/>
-                        </svg>
-                    {% else %}
-                        <svg class="w-12 h-12 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M18,4L20,8H17L15,4H13L15,8H12L10,4H8L10,8H7L5,4H3L5,8H2V10H5L7,14H2V16H7L9,20H11L9,16H12L14,20H16L14,16H17L19,20H21L19,16H22V14H19L17,10H22V8H19L17,4H15M8.5,10H15.5L13.5,14H10.5L8.5,10Z"/>
-                        </svg>
-                    {% endif %}
+        <a href="{{ url_for('content.genre_content', genre_name=genre.name) }}" 
+           class="group bg-gray-800 rounded-lg overflow-hidden hover:bg-gray-700 transition-all duration-300 transform hover:scale-105 shadow-lg">
+            <div class="relative">
+                <!-- Genre Thumbnail -->
+                <div class="aspect-w-16 aspect-h-9 relative">
+                    <img src="{{ genre.thumbnail }}" 
+                         alt="{{ genre.name }}" 
+                         class="w-full h-48 object-cover">
+                    <!-- Dark overlay for better text readability -->
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+                    <!-- Content count badge -->
+                    <div class="absolute top-2 right-2 bg-red-600 text-white text-xs px-2 py-1 rounded-full font-semibold">
+                        {{ genre.content_count }} titles
+                    </div>
                 </div>
-                <h3 class="text-white font-semibold text-lg group-hover:text-white transition-colors">{{ genre }}</h3>
-                <p class="text-gray-400 text-sm mt-2 group-hover:text-gray-200">Explore {{ genre.lower() }} content</p>
+                
+                <!-- Genre Info Overlay -->
+                <div class="absolute bottom-0 left-0 right-0 p-4">
+                    <h3 class="text-white font-bold text-lg mb-1 group-hover:text-red-400 transition-colors">{{ genre.name }}</h3>
+                    <p class="text-gray-300 text-sm truncate">From: {{ genre.content_title }}</p>
+                </div>
+                
+                <!-- Hover overlay with play button -->
+                <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                    <div class="bg-red-600 rounded-full p-3 transform scale-0 group-hover:scale-100 transition-transform duration-300">
+                        <i class="fas fa-play text-white text-xl"></i>
+                    </div>
+                </div>
             </div>
         </a>
         {% endfor %}

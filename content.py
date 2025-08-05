@@ -28,19 +28,37 @@ def movies_list():
 
 @content_bp.route('/genres')
 def genres():
-    # Get all unique genres
+    # Get all unique genres with representative content
     genres = db.session.query(Content.genre).distinct().all()
-    genre_list = []
+    genre_data = {}
+    
     for g in genres:
         if g[0]:
             # Split genres by comma and add to list
             for genre in g[0].split(','):
                 clean_genre = genre.strip()
-                if clean_genre and clean_genre not in genre_list:
-                    genre_list.append(clean_genre)
+                if clean_genre and clean_genre not in genre_data:
+                    # Get a representative content for this genre (highest rated or most recent)
+                    representative_content = Content.query.filter(
+                        Content.genre.contains(clean_genre)
+                    ).filter(
+                        Content.thumbnail_url.isnot(None)
+                    ).order_by(
+                        Content.rating.desc(), 
+                        Content.created_at.desc()
+                    ).first()
+                    
+                    if representative_content:
+                        genre_data[clean_genre] = {
+                            'name': clean_genre,
+                            'thumbnail': representative_content.thumbnail_url,
+                            'content_title': representative_content.title,
+                            'content_count': Content.query.filter(Content.genre.contains(clean_genre)).count()
+                        }
     
-    genre_list.sort()
-    return render_template('genres.html', genres=genre_list)
+    # Sort genres by name
+    sorted_genres = sorted(genre_data.values(), key=lambda x: x['name'])
+    return render_template('genres.html', genres=sorted_genres)
 
 @content_bp.route('/genre/<genre_name>')
 def genre_content(genre_name):
