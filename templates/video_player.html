@@ -103,7 +103,7 @@
             
             <div class="flex flex-wrap gap-3">
                 {% if episode.server_m3u8_url %}
-                <button onclick="switchServer('m3u8', '{{ episode.server_m3u8_url }}')" 
+                <button onclick="loadM3U8Server('{{ episode.server_m3u8_url }}')" 
                         id="server-m3u8"
                         class="server-btn flex items-center px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white font-medium transition-all duration-200">
                     <i class="fas fa-play-circle mr-2"></i>
@@ -121,7 +121,7 @@
                 {% endif %}
                 
                 {% if episode.iqiyi_play_url %}
-                <button onclick="switchServer('iqiyi', '{{ episode.iqiyi_play_url }}')" 
+                <button onclick="loadIqiyiServer('{{ episode.iqiyi_play_url }}')" 
                         id="server-iqiyi"
                         class="server-btn flex items-center px-4 py-2 rounded-lg bg-orange-600 hover:bg-orange-700 text-white font-medium transition-all duration-200">
                     <i class="fas fa-tachometer-alt mr-2"></i>
@@ -413,10 +413,59 @@
 </div>
 
 <script>
-console.log('🎬 AniFlix Plyr.io Video Player Starting...');
-console.log('📺 Video element check:', document.getElementById('video-player'));
-console.log('📦 Plyr available:', typeof Plyr !== 'undefined');
-console.log('📦 HLS available:', typeof Hls !== 'undefined');
+console.log('🎬 AniFlix Stable Video Player Starting...');
+
+// Global stable player instance
+let stablePlayer = null;
+
+// Stable video player class
+class StableVideoPlayer {
+    constructor() {
+        this.currentPlayer = null;
+        this.currentHls = null;
+        this.currentServerType = null;
+    }
+
+    async cleanup() {
+        console.log('🧹 Cleaning up...');
+        
+        if (this.currentPlayer) {
+            try { this.currentPlayer.destroy(); } catch (e) {}
+            this.currentPlayer = null;
+        }
+        
+        if (this.currentHls) {
+            try { this.currentHls.destroy(); } catch (e) {}
+            this.currentHls = null;
+        }
+        
+        window.player = null;
+        window.hls = null;
+        
+        await new Promise(resolve => setTimeout(resolve, 100));
+        console.log('✅ Cleanup completed');
+    }
+
+    updateButtonStyles(activeType) {
+        document.querySelectorAll('.server-btn').forEach(btn => {
+            btn.classList.remove('bg-green-600', 'bg-blue-600', 'bg-orange-600');
+            btn.classList.add('bg-slate-600');
+        });
+        
+        const colorMap = {
+            'm3u8': 'bg-green-600',
+            'embed': 'bg-blue-600', 
+            'iqiyi': 'bg-orange-600',
+            'direct': 'bg-green-600'
+        };
+        
+        const activeBtn = document.getElementById(`server-${activeType}`);
+        if (activeBtn && colorMap[activeType]) {
+            activeBtn.classList.remove('bg-slate-600');
+            activeBtn.classList.add(colorMap[activeType]);
+        }
+    }
+}
 
 // Global variables  
 let player = null;
@@ -855,60 +904,82 @@ function restartVideo() {
     }
 }
 
-// Simple embed server loader
-function loadEmbedServer(embedUrl) {
-    console.log('🔄 Loading Server 2 - Embed iframe:', embedUrl);
+// Stable server loading functions
+async function loadM3U8Server(m3u8Url) {
+    console.log('🔄 Loading M3U8 Server:', m3u8Url);
+    if (!stablePlayer) stablePlayer = new StableVideoPlayer();
     
-    // Hide video player
-    const videoPlayer = document.getElementById('video-player');
+    await stablePlayer.cleanup();
+    
+    const video = document.getElementById('video-player');
+    const embedContainer = document.getElementById('embed-container');
+    
+    if (embedContainer) {
+        embedContainer.style.display = 'none';
+        embedContainer.classList.add('hidden');
+    }
+    if (video) video.style.display = 'block';
+
+    if (Hls.isSupported()) {
+        hls = new Hls({ debug: false, enableWorker: true });
+        hls.loadSource(m3u8Url);
+        hls.attachMedia(video);
+        
+        hls.on(Hls.Events.MANIFEST_PARSED, () => console.log('✅ M3U8 loaded'));
+        hls.on(Hls.Events.ERROR, (event, data) => {
+            console.error('❌ HLS Error:', data);
+            if (data.fatal) hls.startLoad();
+        });
+        
+        stablePlayer.currentHls = hls;
+        window.hls = hls;
+    } else {
+        video.src = m3u8Url;
+    }
+
+    player = new Plyr(video, {
+        controls: ['play-large', 'play', 'progress', 'current-time', 'duration', 'mute', 'volume', 'settings', 'fullscreen'],
+        settings: ['speed'],
+        speed: { selected: 1, options: [0.5, 0.75, 1, 1.25, 1.5, 2] }
+    });
+    
+    stablePlayer.currentPlayer = player;
+    window.player = player;
+    stablePlayer.updateButtonStyles('m3u8');
+    console.log('✅ M3U8 server loaded');
+}
+
+async function loadEmbedServer(embedUrl) {
+    console.log('🔄 Loading Embed Server:', embedUrl);
+    if (!stablePlayer) stablePlayer = new StableVideoPlayer();
+    
+    await stablePlayer.cleanup();
+    
+    const video = document.getElementById('video-player');
     const embedContainer = document.getElementById('embed-container');
     const embedPlayer = document.getElementById('embed-player');
     
-    if (videoPlayer) videoPlayer.style.display = 'none';
+    if (video) video.style.display = 'none';
     
     if (embedContainer && embedPlayer) {
         embedPlayer.src = embedUrl;
         embedContainer.classList.remove('hidden');
         embedContainer.style.display = 'block';
-        console.log('✅ Server 2 embed iframe created and injected');
         
-        // Update button styles
-        document.querySelectorAll('.server-btn').forEach(btn => {
-            btn.classList.remove('bg-green-600', 'bg-blue-600', 'bg-orange-600', 'bg-slate-600');
-            btn.classList.add('bg-slate-600');
-        });
-        
-        const embedBtn = document.getElementById('server-embed');
-        if (embedBtn) {
-            embedBtn.classList.remove('bg-slate-600');
-            embedBtn.classList.add('bg-blue-600');
-        }
-        
-        // Add load event
-        embedPlayer.onload = () => {
-            console.log('✅ Server 2 embed iframe loaded successfully');
-        };
-    } else {
-        console.error('❌ Embed container or player not found');
+        embedPlayer.onload = () => console.log('✅ Embed loaded');
     }
+    
+    stablePlayer.updateButtonStyles('embed');
+    console.log('✅ Embed server loaded');
 }
 
-// Direct video server loader
-function loadDirectServer(directUrl) {
+async function loadDirectServer(directUrl) {
     console.log('🔄 Loading Direct Video Server:', directUrl);
+    if (!stablePlayer) stablePlayer = new StableVideoPlayer();
     
-    // Clean up previous instances
-    if (window.player) {
-        window.player.destroy();
-        window.player = null;
-    }
-    if (window.hls) {
-        window.hls.destroy();
-        window.hls = null;
-    }
+    await stablePlayer.cleanup();
     
-    // Show video player and hide embed
-    const videoPlayer = document.getElementById('video-player');
+    const video = document.getElementById('video-player');
     const embedContainer = document.getElementById('embed-container');
     
     if (embedContainer) {
@@ -916,65 +987,84 @@ function loadDirectServer(directUrl) {
         embedContainer.classList.add('hidden');
     }
     
-    if (videoPlayer) {
-        videoPlayer.style.display = 'block';
+    if (video) {
+        video.style.display = 'block';
+        video.src = directUrl;
+        video.crossOrigin = null;
+        video.load();
         
-        // Set source directly for MP4/direct files
-        videoPlayer.src = directUrl;
-        videoPlayer.crossOrigin = null; // Remove CORS for direct files
-        videoPlayer.load();
-        
-        // Initialize Plyr for direct video with full features
-        window.player = new Plyr(videoPlayer, {
-            captions: { active: true, update: true, language: 'en' },
-            controls: [
-                'play-large', 'play', 'progress', 'current-time', 'duration', 
-                'mute', 'volume', 'captions', 'settings', 'pip', 'airplay', 'fullscreen'
-            ],
-            settings: ['captions', 'quality', 'speed'],
-            quality: { 
-                default: 720, 
-                options: [4320, 2880, 2160, 1440, 1080, 720, 576, 480, 360, 240] 
-            },
+        player = new Plyr(video, {
+            controls: ['play-large', 'play', 'progress', 'current-time', 'duration', 'mute', 'volume', 'settings', 'fullscreen'],
+            settings: ['quality', 'speed'],
+            quality: { default: 720, options: [1080, 720, 480, 360] },
             speed: { selected: 1, options: [0.5, 0.75, 1, 1.25, 1.5, 2] }
         });
         
-        console.log('✅ Direct video player initialized');
+        stablePlayer.currentPlayer = player;
+        window.player = player;
         
-        // Add watch time restriction for free users (same as other servers)
-        {% if not can_watch_full and max_watch_time %}
-        const maxWatchSeconds = {{ max_watch_time|default(5)|int }} * 60;
-        window.player.on('play', function() {
-            setTimeout(function() {
-                window.player.pause();
-                document.getElementById('upgrade-overlay').classList.remove('hidden');
-            }, maxWatchSeconds * 1000);
+        // Add events
+        video.addEventListener('loadstart', () => console.log('✅ Direct: loadstart'));
+        video.addEventListener('loadedmetadata', () => console.log('✅ Direct: metadata loaded'));
+        video.addEventListener('canplay', () => console.log('✅ Direct: can play'));
+    }
+    
+    stablePlayer.updateButtonStyles('direct');
+    console.log('✅ Direct video server loaded');
+}
+
+async function loadIqiyiServer(iqiyiUrl) {
+    console.log('🔄 Loading iQiyi Server:', iqiyiUrl);
+    if (!stablePlayer) stablePlayer = new StableVideoPlayer();
+    
+    try {
+        const response = await fetch('/admin/api/extract-iqiyi-m3u8', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ iqiyi_play_url: iqiyiUrl })
         });
-        {% endif %}
         
-        // Update button styles
-        document.querySelectorAll('.server-btn').forEach(btn => {
-            btn.classList.remove('bg-green-600', 'bg-blue-600', 'bg-orange-600', 'bg-slate-600');
-            btn.classList.add('bg-slate-600');
-        });
+        const result = await response.json();
         
-        const directBtn = document.getElementById('server-direct');
-        if (directBtn) {
-            directBtn.classList.remove('bg-slate-600');
-            directBtn.classList.add('bg-green-600');
+        if (result.success && result.m3u8_content) {
+            await stablePlayer.cleanup();
+            
+            const blob = new Blob([result.m3u8_content], { type: 'application/vnd.apple.mpegurl' });
+            const videoUrl = URL.createObjectURL(blob);
+            
+            const video = document.getElementById('video-player');
+            const embedContainer = document.getElementById('embed-container');
+            
+            if (embedContainer) {
+                embedContainer.style.display = 'none';
+                embedContainer.classList.add('hidden');
+            }
+            
+            if (video) {
+                video.style.display = 'block';
+                video.src = videoUrl;
+                video.crossOrigin = null;
+                video.load();
+                
+                player = new Plyr(video, {
+                    controls: ['play-large', 'play', 'progress', 'current-time', 'duration', 'mute', 'volume', 'settings', 'fullscreen'],
+                    settings: ['quality', 'speed'],
+                    quality: { default: 720, options: [1080, 720, 480, 360] },
+                    speed: { selected: 1, options: [0.5, 0.75, 1, 1.25, 1.5, 2] }
+                });
+                
+                stablePlayer.currentPlayer = player;
+                window.player = player;
+            }
+            
+            stablePlayer.updateButtonStyles('iqiyi');
+            console.log('✅ iQiyi server loaded');
+        } else {
+            throw new Error('Failed to extract M3U8');
         }
-        
-        // Add debugging events
-        videoPlayer.addEventListener('loadstart', () => console.log('✅ Direct: loadstart'));
-        videoPlayer.addEventListener('loadedmetadata', () => console.log('✅ Direct: metadata loaded'));
-        videoPlayer.addEventListener('canplay', () => console.log('✅ Direct: can play'));
-        videoPlayer.addEventListener('error', (e) => {
-            console.error('❌ Direct video error:', e);
-            console.error('❌ Error details:', videoPlayer.error);
-        });
-        
-    } else {
-        console.error('❌ Video player element not found');
+    } catch (error) {
+        console.error('❌ iQiyi extraction failed:', error);
+        await loadEmbedServer(iqiyiUrl);
     }
 }
 
