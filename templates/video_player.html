@@ -112,7 +112,7 @@
                 {% endif %}
                 
                 {% if episode.server_embed_url %}
-                <button onclick="switchServer('embed', '{{ episode.server_embed_url }}')" 
+                <button onclick="loadEmbedServer('{{ episode.server_embed_url }}')" 
                         id="server-embed"
                         class="server-btn flex items-center px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-all duration-200">
                     <i class="fas fa-code mr-2"></i>
@@ -852,6 +852,44 @@ function restartVideo() {
         player.currentTime = 0;
         player.play();
         document.getElementById('upgrade-overlay').classList.add('hidden');
+    }
+}
+
+// Simple embed server loader
+function loadEmbedServer(embedUrl) {
+    console.log('🔄 Loading Server 2 - Embed iframe:', embedUrl);
+    
+    // Hide video player
+    const videoPlayer = document.getElementById('video-player');
+    const embedContainer = document.getElementById('embed-container');
+    const embedPlayer = document.getElementById('embed-player');
+    
+    if (videoPlayer) videoPlayer.style.display = 'none';
+    
+    if (embedContainer && embedPlayer) {
+        embedPlayer.src = embedUrl;
+        embedContainer.classList.remove('hidden');
+        embedContainer.style.display = 'block';
+        console.log('✅ Server 2 embed iframe created and injected');
+        
+        // Update button styles
+        document.querySelectorAll('.server-btn').forEach(btn => {
+            btn.classList.remove('bg-green-600', 'bg-blue-600', 'bg-orange-600');
+            btn.classList.add('bg-slate-600');
+        });
+        
+        const embedBtn = document.getElementById('server-embed');
+        if (embedBtn) {
+            embedBtn.classList.remove('bg-slate-600');
+            embedBtn.classList.add('bg-blue-600');
+        }
+        
+        // Add load event
+        embedPlayer.onload = () => {
+            console.log('✅ Server 2 embed iframe loaded successfully');
+        };
+    } else {
+        console.error('❌ Embed container or player not found');
     }
 }
 
