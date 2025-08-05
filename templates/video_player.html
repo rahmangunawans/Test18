@@ -924,17 +924,33 @@ function loadDirectServer(directUrl) {
         videoPlayer.crossOrigin = null; // Remove CORS for direct files
         videoPlayer.load();
         
-        // Initialize Plyr for direct video
+        // Initialize Plyr for direct video with full features
         window.player = new Plyr(videoPlayer, {
+            captions: { active: true, update: true, language: 'en' },
             controls: [
                 'play-large', 'play', 'progress', 'current-time', 'duration', 
-                'mute', 'volume', 'settings', 'fullscreen'
+                'mute', 'volume', 'captions', 'settings', 'pip', 'airplay', 'fullscreen'
             ],
-            settings: ['speed'],
+            settings: ['captions', 'quality', 'speed'],
+            quality: { 
+                default: 720, 
+                options: [4320, 2880, 2160, 1440, 1080, 720, 576, 480, 360, 240] 
+            },
             speed: { selected: 1, options: [0.5, 0.75, 1, 1.25, 1.5, 2] }
         });
         
         console.log('✅ Direct video player initialized');
+        
+        // Add watch time restriction for free users (same as other servers)
+        {% if not can_watch_full and max_watch_time %}
+        const maxWatchSeconds = {{ max_watch_time|default(5)|int }} * 60;
+        window.player.on('play', function() {
+            setTimeout(function() {
+                window.player.pause();
+                document.getElementById('upgrade-overlay').classList.remove('hidden');
+            }, maxWatchSeconds * 1000);
+        });
+        {% endif %}
         
         // Update button styles
         document.querySelectorAll('.server-btn').forEach(btn => {
@@ -945,7 +961,7 @@ function loadDirectServer(directUrl) {
         const directBtn = document.getElementById('server-direct');
         if (directBtn) {
             directBtn.classList.remove('bg-slate-600');
-            directBtn.classList.add('bg-slate-600');
+            directBtn.classList.add('bg-green-600');
         }
         
         // Add debugging events
