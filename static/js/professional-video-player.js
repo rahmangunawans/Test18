@@ -190,15 +190,36 @@ class ProfessionalVideoPlayer {
     }
 
     loadEmbedPlayer(url) {
+        console.log('🔄 Loading Server 2 - Embed iframe');
         this.hideVideoPlayer();
         
         const embedContainer = document.getElementById('embed-container');
         const embedPlayer = document.getElementById('embed-player');
         
+        console.log('📺 Embed elements found:', {
+            container: !!embedContainer,
+            player: !!embedPlayer,
+            url: url
+        });
+        
         if (embedContainer && embedPlayer) {
             embedPlayer.src = url;
             embedContainer.classList.remove('hidden');
+            console.log('✅ Server 2 embed iframe created and injected');
             this.showNotification('Embed player loaded', 'success');
+            
+            // Add load event listener
+            embedPlayer.onload = () => {
+                console.log('✅ Server 2 embed iframe loaded successfully');
+            };
+            
+            embedPlayer.onerror = (error) => {
+                console.error('❌ Server 2 embed iframe failed to load:', error);
+                this.showNotification('Embed player failed to load', 'error');
+            };
+        } else {
+            console.error('❌ Embed container or player not found');
+            this.showNotification('Embed container not found', 'error');
         }
     }
 
@@ -309,6 +330,8 @@ class ProfessionalVideoPlayer {
 
     hideVideoPlayer() {
         document.getElementById('video-player')?.classList.add('hidden');
+        // Also hide embed container when showing video player
+        document.getElementById('embed-container')?.classList.add('hidden');
     }
 
     updateServerButtons(activeType) {
