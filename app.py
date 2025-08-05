@@ -271,22 +271,23 @@ def check_maintenance_mode():
 @app.route('/')
 def index():
     from models import Content
-    featured_content = Content.query.filter_by(is_featured=True).filter_by(content_type='anime').limit(6).all()
+    # Hero carousel - shows all featured content (anime, movies, donghua)
+    featured_content = Content.query.filter_by(is_featured=True).limit(6).all()
     latest_content = Content.query.order_by(Content.created_at.desc()).limit(8).all()
     popular_content = Content.query.order_by(Content.rating.desc()).limit(8).all()
     
-    # Get featured donghua (Chinese anime)
+    # Separate featured content by type for specific sections
+    featured_anime = Content.query.filter_by(is_featured=True).filter_by(content_type='anime').limit(6).all()
     featured_donghua = Content.query.filter_by(is_featured=True).filter_by(content_type='donghua').limit(6).all()
-    
-    # Get featured movies
     featured_movies = Content.query.filter_by(is_featured=True).filter_by(content_type='movie').limit(6).all()
     
     return render_template('index.html', 
-                         featured_content=featured_content, 
+                         featured_content=featured_content,  # For hero carousel 
                          latest_content=latest_content, 
                          popular_content=popular_content,
-                         featured_donghua=featured_donghua,
-                         featured_movies=featured_movies)
+                         featured_anime=featured_anime,      # For Featured Anime section
+                         featured_donghua=featured_donghua,  # For Featured Donghua section
+                         featured_movies=featured_movies)    # For Featured Movies section
 
 @app.route('/dashboard')
 @login_required
