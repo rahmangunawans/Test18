@@ -185,6 +185,74 @@
     </section>
     {% endif %}
 
+    <!-- Featured Movies -->
+    {% if featured_movies %}
+    <section class="py-12 bg-gray-900">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between mb-8">
+                <h2 class="text-2xl font-bold">Featured Movies</h2>
+                <a href="{{ url_for('content.movies_list') }}" class="text-red-500 hover:text-red-400 flex items-center">
+                    View All <i class="fas fa-chevron-right ml-1"></i>
+                </a>
+            </div>
+
+            <div class="relative">
+                <div class="carousel flex overflow-x-auto space-x-6 pb-6 scrollbar-hide">
+                    {% for movie in featured_movies %}
+                    <div class="carousel-item w-48 flex-shrink-0">
+                        <div class="bg-gray-800 rounded-lg overflow-hidden shadow-lg transition-all duration-300 card-hover">
+                            <div class="relative">
+                                <img src="{{ movie.thumbnail_url }}" alt="{{ movie.title }}" class="w-full h-64 object-cover">
+                                <div class="absolute top-2 right-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded">
+                                    MOVIE
+                                </div>
+                                <div class="absolute inset-0 bg-gradient-to-t from-black to-transparent opacity-0 hover:opacity-80 transition-opacity duration-300 flex items-center justify-center">
+                                    <div class="flex space-x-3">
+                                        <a href="{{ url_for('content.anime_redirect', content_id=movie.id) }}"
+                                            class="bg-red-600 hover:bg-red-700 text-white rounded-full p-3 transition-all">
+                                            <i class="fas fa-play"></i>
+                                        </a>
+                                        {% if movie.trailer_url %}
+                                        <button onclick="openTrailerModal('{{ movie.trailer_url }}')"
+                                            class="bg-gray-600 hover:bg-gray-700 text-white rounded-full p-3 transition-all">
+                                            <i class="fas fa-video"></i>
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="p-4">
+                                <h3 class="font-semibold text-white mb-1 truncate">{{ movie.title }}</h3>
+                                <div class="flex items-center text-gray-400 text-sm">
+                                    <i class="fas fa-star text-yellow-400 mr-1"></i>
+                                    <span>{{ movie.rating }}</span>
+                                    <span class="mx-2">•</span>
+                                    <span>{{ movie.year }}</span>
+                                </div>
+                                <div class="mt-2 flex flex-wrap gap-1">
+                                    {% for genre in movie.genre.split(', ')[:2] %}
+                                    <span class="genre-tag bg-gray-700 text-gray-300 text-xs px-2 py-1 rounded">{{ genre }}</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <button
+                    class="carousel-prev absolute left-0 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-60 text-white p-2 rounded-full hover:bg-opacity-80 hidden md:block">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <button
+                    class="carousel-next absolute right-0 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-60 text-white p-2 rounded-full hover:bg-opacity-80 hidden md:block">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+    </section>
+    {% endif %}
+
     <!-- Featured Donghua -->
     {% if featured_donghua %}
     <section class="py-12 bg-gray-900">

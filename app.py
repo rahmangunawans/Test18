@@ -271,18 +271,22 @@ def check_maintenance_mode():
 @app.route('/')
 def index():
     from models import Content
-    featured_content = Content.query.filter_by(is_featured=True).all()
+    featured_content = Content.query.filter_by(is_featured=True).filter_by(content_type='anime').limit(6).all()
     latest_content = Content.query.order_by(Content.created_at.desc()).limit(8).all()
     popular_content = Content.query.order_by(Content.rating.desc()).limit(8).all()
     
-    # Get featured donghua (Chinese anime) - using specific IDs for now
-    featured_donghua = Content.query.filter(Content.id.in_([1,2,3])).all()
+    # Get featured donghua (Chinese anime)
+    featured_donghua = Content.query.filter_by(is_featured=True).filter_by(content_type='donghua').limit(6).all()
+    
+    # Get featured movies
+    featured_movies = Content.query.filter_by(is_featured=True).filter_by(content_type='movie').limit(6).all()
     
     return render_template('index.html', 
                          featured_content=featured_content, 
                          latest_content=latest_content, 
                          popular_content=popular_content,
-                         featured_donghua=featured_donghua)
+                         featured_donghua=featured_donghua,
+                         featured_movies=featured_movies)
 
 @app.route('/dashboard')
 @login_required

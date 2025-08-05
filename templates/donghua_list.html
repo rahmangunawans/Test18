@@ -45,29 +45,79 @@
             </form>
         </div>
 
+        <!-- Results Info -->
+        <div class="flex items-center justify-between mb-6">
+            <div class="text-gray-400">
+                {% if search or genre %}
+                    Showing {{ donghua_list.items|length }} results
+                    {% if search %}for "{{ search }}"{% endif %}
+                    {% if genre %}in {{ genre }}{% endif %}
+                {% else %}
+                    Showing all donghua ({{ donghua_list.total }} total)
+                {% endif %}
+            </div>
+            <div class="text-gray-400 text-sm">
+                Page {{ donghua_list.page }} of {{ donghua_list.pages }}
+            </div>
+        </div>
+
         <!-- Donghua Grid -->
         {% if donghua_list.items %}
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-8">
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6 mb-8">
             {% for content in donghua_list.items %}
-            <div class="bg-gray-800 rounded-lg overflow-hidden hover:transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl">
-                <div class="relative group">
-                    <img src="{{ content.thumbnail_url }}" alt="{{ content.title }}" 
-                         class="w-full h-64 object-cover">
-                    <div class="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                        <a href="{{ url_for('content.anime_redirect', content_id=content.id) }}" 
-                           class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center transition-colors">
-                            <i class="fas fa-play mr-2"></i>Watch
-                        </a>
+            <div class="bg-gray-800 rounded-lg overflow-hidden shadow-lg transition-all duration-300 card-hover">
+                <div class="relative">
+                    <img src="{{ content.thumbnail_url }}" alt="{{ content.title }}" class="w-full h-64 object-cover">
+                    
+                    <!-- Overlay on Hover -->
+                    <div class="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-70 transition-all duration-300 flex items-center justify-center opacity-0 hover:opacity-100">
+                        <div class="flex space-x-3">
+                            <a href="{{ url_for('content.anime_redirect', content_id=content.id) }}" 
+                               class="bg-red-600 hover:bg-red-700 text-white rounded-full p-3 inline-block transition-all">
+                                <i class="fas fa-play"></i>
+                            </a>
+                            {% if content.trailer_url %}
+                            <button onclick="openTrailerModal('{{ content.trailer_url }}')"
+                               class="bg-gray-600 hover:bg-gray-700 text-white rounded-full p-3 inline-block transition-all">
+                                <i class="fas fa-video"></i>
+                            </button>
+                            {% endif %}
+                        </div>
                     </div>
-                    <div class="absolute top-2 right-2 bg-yellow-500 text-black px-2 py-1 rounded text-xs font-bold">
-                        ⭐ {{ content.rating or 'N/A' }}
+                    
+                    <!-- Episode Count Badge -->
+                    <div class="absolute top-2 right-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded">
+                        {{ content.episodes|length }} EP
                     </div>
+                    
+                    <!-- Featured Badge -->
+                    {% if content.is_featured %}
+                        <div class="absolute top-2 left-2 bg-red-600 text-white text-xs px-2 py-1 rounded">
+                            FEATURED
+                        </div>
+                    {% endif %}
                 </div>
+                
                 <div class="p-4">
-                    <h3 class="text-white font-semibold text-sm mb-2 line-clamp-2">{{ content.title }}</h3>
-                    <div class="flex justify-between items-center text-xs text-gray-400">
-                        <span>{{ content.year or 'Unknown' }}</span>
-                        <span class="bg-red-600 text-white px-2 py-1 rounded">Donghua</span>
+                    <h3 class="font-semibold text-white mb-1 truncate">
+                        <a href="{{ url_for('content.anime_redirect', content_id=content.id) }}" class="hover:text-red-400">
+                            {{ content.title }}
+                        </a>
+                    </h3>
+                    
+                    <div class="flex items-center text-gray-400 text-sm mb-2">
+                        <i class="fas fa-star text-yellow-400 mr-1"></i>
+                        <span>{{ "%.1f"|format(content.rating) }}</span>
+                        <span class="mx-2">•</span>
+                        <span>{{ content.year }}</span>
+                    </div>
+                    
+                    <div class="flex flex-wrap gap-1">
+                        {% for genre in content.genre.split(', ')[:2] %}
+                            <span class="genre-tag bg-gray-700 text-gray-300 text-xs px-2 py-1 rounded hover:bg-red-500 hover:text-white transition-colors">
+                                {{ genre }}
+                            </span>
+                        {% endfor %}
                     </div>
                 </div>
             </div>

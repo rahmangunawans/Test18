@@ -45,24 +45,80 @@
             </form>
         </div>
 
+        <!-- Results Info -->
+        <div class="flex items-center justify-between mb-6">
+            <div class="text-gray-400">
+                {% if search or genre %}
+                    Showing {{ movies_list.items|length }} results
+                    {% if search %}for "{{ search }}"{% endif %}
+                    {% if genre %}in {{ genre }}{% endif %}
+                {% else %}
+                    Showing all movies ({{ movies_list.total }} total)
+                {% endif %}
+            </div>
+            <div class="text-gray-400 text-sm">
+                Page {{ movies_list.page }} of {{ movies_list.pages }}
+            </div>
+        </div>
+
         <!-- Movies Grid -->
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6 mb-8">
         {% for movie in movies_list.items %}
-        <div class="bg-gray-800 rounded-lg overflow-hidden hover:transform hover:scale-105 transition-transform card-hover">
-            <a href="{{ url_for('content.anime_redirect', content_id=movie.id) }}">
-                <img src="{{ movie.thumbnail_url or 'https://via.placeholder.com/300x450/374151/ffffff?text=' + movie.title }}" 
-                     alt="{{ movie.title }}" class="w-full h-64 object-cover">
-                <div class="p-4">
-                    <h3 class="text-white font-semibold text-sm mb-2 line-clamp-2">{{ movie.title }}</h3>
-                    <p class="text-gray-400 text-xs mb-2">{{ movie.genre }}</p>
-                    <div class="flex items-center justify-between">
-                        <span class="text-yellow-400 text-xs">
-                            <i class="fas fa-star mr-1"></i>{{ movie.rating or 'N/A' }}
-                        </span>
-                        <span class="text-gray-500 text-xs">{{ movie.year }}</span>
+        <div class="bg-gray-800 rounded-lg overflow-hidden shadow-lg transition-all duration-300 card-hover">
+            <div class="relative">
+                <img src="{{ movie.thumbnail_url }}" alt="{{ movie.title }}" class="w-full h-64 object-cover">
+                
+                <!-- Overlay on Hover -->
+                <div class="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-70 transition-all duration-300 flex items-center justify-center opacity-0 hover:opacity-100">
+                    <div class="flex space-x-3">
+                        <a href="{{ url_for('content.anime_redirect', content_id=movie.id) }}" 
+                           class="bg-red-600 hover:bg-red-700 text-white rounded-full p-3 inline-block transition-all">
+                            <i class="fas fa-play"></i>
+                        </a>
+                        {% if movie.trailer_url %}
+                        <button onclick="openTrailerModal('{{ movie.trailer_url }}')"
+                           class="bg-gray-600 hover:bg-gray-700 text-white rounded-full p-3 inline-block transition-all">
+                            <i class="fas fa-video"></i>
+                        </button>
+                        {% endif %}
                     </div>
                 </div>
-            </a>
+                
+                <!-- Movie Badge -->
+                <div class="absolute top-2 right-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded">
+                    MOVIE
+                </div>
+                
+                <!-- Featured Badge -->
+                {% if movie.is_featured %}
+                    <div class="absolute top-2 left-2 bg-red-600 text-white text-xs px-2 py-1 rounded">
+                        FEATURED
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="p-4">
+                <h3 class="font-semibold text-white mb-1 truncate">
+                    <a href="{{ url_for('content.anime_redirect', content_id=movie.id) }}" class="hover:text-red-400">
+                        {{ movie.title }}
+                    </a>
+                </h3>
+                
+                <div class="flex items-center text-gray-400 text-sm mb-2">
+                    <i class="fas fa-star text-yellow-400 mr-1"></i>
+                    <span>{{ "%.1f"|format(movie.rating) }}</span>
+                    <span class="mx-2">•</span>
+                    <span>{{ movie.year }}</span>
+                </div>
+                
+                <div class="flex flex-wrap gap-1">
+                    {% for genre in movie.genre.split(', ')[:2] %}
+                        <span class="genre-tag bg-gray-700 text-gray-300 text-xs px-2 py-1 rounded hover:bg-red-500 hover:text-white transition-colors">
+                            {{ genre }}
+                        </span>
+                    {% endfor %}
+                </div>
+            </div>
         </div>
         {% endfor %}
         </div>
